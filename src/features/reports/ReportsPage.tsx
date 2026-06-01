@@ -1,28 +1,22 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import { useDayBook } from '@/hooks/queries'
+import { useDayBook, useParties, usePartyLedger, useAged, useGstSummary } from '@/hooks/queries'
 import { formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
+import { Select } from '@/components/ui/Input'
 
-type TBRow = {
-  account_id: string
-  account_name: string
-  closing_debit: number
-  closing_credit: number
-}
+type Tab = 'tb' | 'daybook' | 'ledger' | 'receivables' | 'payables' | 'gst'
+type TBRow = { account_id: string; account_name: string; closing_debit: number; closing_credit: number }
 
 function useTrialBalance(orgId: string | null) {
   return useQuery({
-    queryKey: ['trial_balance', orgId],
-    enabled: !!orgId,
+    queryKey: ['trial_balance', orgId], enabled: !!orgId,
     queryFn: async (): Promise<TBRow[]> => {
-      const { data, error } = await supabase
-        .from('v_trial_balance')
-        .select('account_id, account_name, closing_debit, closing_credit')
-        .eq('org_id', orgId)
-        .order('account_name')
+      const { data, error } = await supabase.from('v_trial_balance')
+        .select('account_id, account_name, closing_debit, closing_credit').eq('org_id', orgId).order('account_name')
       if (error) throw error
       return (data ?? []) as TBRow[]
     },
@@ -31,68 +25,182 @@ function useTrialBalance(orgId: string | null) {
 
 export function ReportsPage() {
   const { currentOrgId } = useAuth()
-  const [tab, setTab] = useState<'tb' | 'daybook'>('tb')
-  const { data: tb = [] } = useTrialBalance(currentOrgId)
-  const { data: rows = [] } = useDayBook(currentOrgId, 100)
+  const [params, setParams] = useSearchParams()
+  const initial: Tab = params.get('ledger') ? 'ledger' : 'tb'
+  const [tab, setTab] = useState<Tab>(initial)
 
-  const totalDr = tb.reduce((s, r) => s + r.closing_debit, 0)
-  const totalCr = tb.reduce((s, r) => s + r.closing_credit, 0)
-  const balanced = totalDr === totalCr
+  const TABS: [Tab, string][] = [
+    ['tb', 'Trial Balance'], ['daybook', 'Day Book'], ['ledger', 'Party Ledger'],
+    ['receivables', 'Receivables'], ['payables', 'Payables'], ['gst', 'GST'],
+  ]
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Reports</h2>
-      <div className="flex gap-2">
-        {([['tb', 'Trial Balance'], ['daybook', 'Day Book']] as const).map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`rounded-full px-3 py-1.5 text-sm ${tab === id ? 'bg-brand-600 text-white' : 'bg-white border border-line text-muted'}`}
-          >
+    <div className="space-y-5">
+      <h2 className="text-xl font-semibold">Reports</h2>
+      <div className="flex flex-wrap gap-2">
+        {TABS.map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)}
+            className={`rounded-full px-3.5 py-1.5 text-sm ${tab === id ? 'bg-brand-600 text-white' : 'border border-line bg-surface text-muted'}`}>
             {label}
           </button>
         ))}
       </div>
 
-      {tab === 'tb' ? (
-        <Card className="p-0">
-          <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2 text-xs font-medium text-muted">
-            <span>Account</span><span className="text-right">Debit</span><span className="text-right">Credit</span>
-          </div>
-          <ul className="divide-y divide-line">
+      {tab === 'tb' && <TrialBalance orgId={currentOrgId} />}
+      {tab === 'daybook' && <DayBook orgId={currentOrgId} />}
+      {tab === 'ledger' && <PartyLedger orgId={currentOrgId} initialParty={params.get('ledger')} onParty={(id) => setParams(id ? { ledger: id } : {})} />}
+      {tab === 'receivables' && <Aged orgId={currentOrgId} kind="receivables" />}
+      {tab === 'payables' && <Aged orgId={currentOrgId} kind="payables" />}
+      {tab === 'gst' && <Gst orgId={currentOrgId} />}
+    </div>
+  )
+}
+
+function TrialBalance({ orgId }: { orgId: string | null }) {
+  const { data: tb = [] } = useTrialBalance(orgId)
+  const dr = tb.reduce((s, r) => s + r.closing_debit, 0)
+  const cr = tb.reduce((s, r) => s + r.closing_credit, 0)
+  return (
+    <Card className="p-0">
+      <div className="overflow-x-auto">
+        <table className="tbl">
+          <thead><tr><th>Account</th><th className="r">Debit</th><th className="r">Credit</th></tr></thead>
+          <tbody>
             {tb.map((r) => (
-              <li key={r.account_id} className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2.5 text-sm">
-                <span className="truncate">{r.account_name}</span>
-                <span className="text-right tabular-nums">{r.closing_debit ? formatINR(r.closing_debit, false) : '—'}</span>
-                <span className="text-right tabular-nums">{r.closing_credit ? formatINR(r.closing_credit, false) : '—'}</span>
-              </li>
+              <tr key={r.account_id}>
+                <td>{r.account_name}</td>
+                <td className="r num">{r.closing_debit ? formatINR(r.closing_debit, false) : '—'}</td>
+                <td className="r num">{r.closing_credit ? formatINR(r.closing_credit, false) : '—'}</td>
+              </tr>
             ))}
-            {tb.length === 0 && <li className="px-4 py-6 text-center text-sm text-muted">No entries yet.</li>}
-          </ul>
+            {!tb.length && <tr><td colSpan={3} className="py-6 text-center text-muted">No entries yet.</td></tr>}
+          </tbody>
           {tb.length > 0 && (
-            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 border-t border-line px-4 py-2.5 text-sm font-semibold">
-              <span className={balanced ? 'text-pos' : 'text-neg'}>{balanced ? 'Balanced' : 'NOT balanced'}</span>
-              <span className="text-right tabular-nums">{formatINR(totalDr, false)}</span>
-              <span className="text-right tabular-nums">{formatINR(totalCr, false)}</span>
-            </div>
+            <tfoot>
+              <tr className="font-semibold">
+                <td className={dr === cr ? 'text-pos' : 'text-neg'}>{dr === cr ? 'Balanced' : 'NOT balanced'}</td>
+                <td className="r num">{formatINR(dr, false)}</td>
+                <td className="r num">{formatINR(cr, false)}</td>
+              </tr>
+            </tfoot>
           )}
-        </Card>
-      ) : (
-        <Card className="p-0">
-          <ul className="divide-y divide-line">
+        </table>
+      </div>
+    </Card>
+  )
+}
+
+function DayBook({ orgId }: { orgId: string | null }) {
+  const { data: rows = [] } = useDayBook(orgId, 100)
+  return (
+    <Card className="p-0">
+      <div className="overflow-x-auto">
+        <table className="tbl">
+          <thead><tr><th>Date</th><th>Voucher</th><th>Type</th><th>Party</th><th className="r">Amount</th></tr></thead>
+          <tbody>
             {rows.map((r) => (
-              <li key={r.voucher_id} className="flex items-center justify-between px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{r.type_name}{r.party_name ? ` · ${r.party_name}` : ''}</p>
-                  <p className="text-xs text-muted">{formatDate(r.date)} · {r.voucher_no}{r.status === 'cancelled' ? ' · cancelled' : ''}</p>
-                </div>
-                <span className={`text-sm font-semibold ${r.status === 'cancelled' ? 'text-muted line-through' : ''}`}>{formatINR(r.amount)}</span>
-              </li>
+              <tr key={r.voucher_id}>
+                <td className="num">{formatDate(r.date)}</td>
+                <td className="num">{r.voucher_no}</td>
+                <td>{r.type_name}{r.status === 'cancelled' ? ' (cancelled)' : ''}</td>
+                <td>{r.party_name ?? '—'}</td>
+                <td className={`r num ${r.status === 'cancelled' ? 'text-muted line-through' : ''}`}>{formatINR(r.amount, false)}</td>
+              </tr>
             ))}
-            {rows.length === 0 && <li className="px-4 py-6 text-center text-sm text-muted">No transactions yet.</li>}
-          </ul>
+            {!rows.length && <tr><td colSpan={5} className="py-6 text-center text-muted">No transactions yet.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  )
+}
+
+function PartyLedger({ orgId, initialParty, onParty }: {
+  orgId: string | null; initialParty: string | null; onParty: (id: string) => void
+}) {
+  const { data: parties = [] } = useParties(orgId)
+  const [party, setParty] = useState(initialParty ?? '')
+  const { data: rows = [] } = usePartyLedger(orgId, party || null)
+  return (
+    <div className="space-y-3">
+      <Select className="max-w-xs" value={party} onChange={(e) => { setParty(e.target.value); onParty(e.target.value) }}>
+        <option value="" disabled>Select a party…</option>
+        {parties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </Select>
+      {party && (
+        <Card className="p-0">
+          <div className="overflow-x-auto">
+            <table className="tbl">
+              <thead><tr><th>Date</th><th>Voucher</th><th className="r">Debit</th><th className="r">Credit</th><th className="r">Balance</th></tr></thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={r.voucher_id + i}>
+                    <td className="num">{formatDate(r.date)}</td>
+                    <td className="num">{r.voucher_no}</td>
+                    <td className="r num">{r.debit ? formatINR(r.debit, false) : '—'}</td>
+                    <td className="r num">{r.credit ? formatINR(r.credit, false) : '—'}</td>
+                    <td className="r num">{formatINR(Math.abs(r.running_balance), false)} {r.running_balance >= 0 ? 'Dr' : 'Cr'}</td>
+                  </tr>
+                ))}
+                {!rows.length && <tr><td colSpan={5} className="py-6 text-center text-muted">No transactions.</td></tr>}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
+    </div>
+  )
+}
+
+function Aged({ orgId, kind }: { orgId: string | null; kind: 'receivables' | 'payables' }) {
+  const { data: rows = [] } = useAged(orgId, kind)
+  const sum = (k: keyof (typeof rows)[number]) => rows.reduce((s, r) => s + Number(r[k] ?? 0), 0)
+  return (
+    <Card className="p-0">
+      <div className="overflow-x-auto">
+        <table className="tbl">
+          <thead><tr><th>Party</th><th>Doc</th><th className="r">0–30</th><th className="r">31–60</th><th className="r">61–90</th><th className="r">90+</th><th className="r">Total</th></tr></thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i}>
+                <td>{r.party_name}</td>
+                <td className="num">{r.invoice_no ?? r.bill_no}</td>
+                <td className="r num">{r.b_0_30 ? formatINR(r.b_0_30, false) : '—'}</td>
+                <td className="r num">{r.b_31_60 ? formatINR(r.b_31_60, false) : '—'}</td>
+                <td className="r num">{r.b_61_90 ? formatINR(r.b_61_90, false) : '—'}</td>
+                <td className="r num text-warn">{r.b_90_plus ? formatINR(r.b_90_plus, false) : '—'}</td>
+                <td className="r num font-medium">{formatINR(r.outstanding, false)}</td>
+              </tr>
+            ))}
+            {!rows.length && <tr><td colSpan={7} className="py-6 text-center text-muted">Nothing outstanding.</td></tr>}
+          </tbody>
+          {rows.length > 0 && (
+            <tfoot><tr className="font-semibold">
+              <td colSpan={2}>Total</td>
+              <td className="r num">{formatINR(sum('b_0_30'), false)}</td>
+              <td className="r num">{formatINR(sum('b_31_60'), false)}</td>
+              <td className="r num">{formatINR(sum('b_61_90'), false)}</td>
+              <td className="r num">{formatINR(sum('b_90_plus'), false)}</td>
+              <td className="r num">{formatINR(sum('outstanding'), false)}</td>
+            </tr></tfoot>
+          )}
+        </table>
+      </div>
+    </Card>
+  )
+}
+
+function Gst({ orgId }: { orgId: string | null }) {
+  const { data } = useGstSummary(orgId)
+  const net = data?.net_payable ?? 0
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      <Card><p className="text-xs text-muted">Output tax (collected)</p><p className="num mt-1 text-lg font-semibold">{formatINR(data?.output_tax ?? 0)}</p></Card>
+      <Card><p className="text-xs text-muted">Input credit (ITC)</p><p className="num mt-1 text-lg font-semibold">{formatINR(data?.input_credit ?? 0)}</p></Card>
+      <Card>
+        <p className="text-xs text-muted">{net >= 0 ? 'Net payable' : 'Credit carried forward'}</p>
+        <p className={`num mt-1 text-lg font-semibold ${net >= 0 ? 'text-neg' : 'text-pos'}`}>{formatINR(Math.abs(net))}</p>
+      </Card>
     </div>
   )
 }

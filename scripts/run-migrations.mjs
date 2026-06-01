@@ -13,7 +13,10 @@ if (!url) {
 }
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations')
-const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()
+const only = process.argv[2] // optional: run only files containing this substring
+const files = readdirSync(dir)
+  .filter((f) => f.endsWith('.sql') && (!only || f.includes(only)))
+  .sort()
 
 const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } })
 

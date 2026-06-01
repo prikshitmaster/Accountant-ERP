@@ -4,6 +4,10 @@ import { AuthPage } from '@/features/auth/AuthPage'
 import { CreateOrg } from '@/features/onboarding/CreateOrg'
 import { AppShell } from '@/components/AppShell'
 import { Dashboard } from '@/features/dashboard/Dashboard'
+import { SalesPage } from '@/features/sales/SalesPage'
+import { PurchasesPage } from '@/features/purchases/PurchasesPage'
+import { PartiesPage } from '@/features/masters/PartiesPage'
+import { ItemsPage } from '@/features/masters/ItemsPage'
 import { MoneyPage } from '@/features/money/MoneyPage'
 import { ReportsPage } from '@/features/reports/ReportsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
@@ -24,6 +28,10 @@ export default function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/sales" element={<SalesPage />} />
+        <Route path="/purchases" element={<PurchasesPage />} />
+        <Route path="/parties" element={<PartiesPage />} />
+        <Route path="/items" element={<ItemsPage />} />
         <Route path="/money" element={<MoneyPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/settings" element={<SettingsPage />} />

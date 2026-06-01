@@ -1,31 +1,60 @@
 @import "tailwindcss";
 
-/* ---- Design tokens (mobile-first accounting UI) ---- */
+/* ============================================================
+   "Ledger terminal" — warm paper content, dark sidebar chrome,
+   emerald money accent, IBM Plex type, tabular-mono numerals.
+   ============================================================ */
 @theme {
-  --color-brand-50:  #eef5ff;
-  --color-brand-100: #d9e8ff;
-  --color-brand-500: #2563eb;
-  --color-brand-600: #1d4ed8;
-  --color-brand-700: #1e40af;
-  --color-ink:       #0f172a;
-  --color-muted:     #64748b;
-  --color-line:      #e2e8f0;
-  --color-surface:   #ffffff;
-  --color-canvas:    #f6f8fb;
-  --color-pos:       #15803d;
-  --color-neg:       #b91c1c;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-paper:   #faf8f3;   /* content background (warm) */
+  --color-surface: #ffffff;   /* cards */
+  --color-ink:     #17140d;   /* near-black warm */
+  --color-muted:   #7b7568;   /* secondary text */
+  --color-line:    #e8e3d7;   /* warm hairline */
+
+  --color-sidebar:      #0e1726;  /* dark chrome */
+  --color-sidebar-soft: #1b2638;
+  --color-sidebar-ink:  #c7d0dd;
+  --color-sidebar-dim:  #6b7689;
+
+  --color-brand-50:  #e9f6ef;
+  --color-brand-100: #c9ead8;
+  --color-brand-500: #138a5a;
+  --color-brand-600: #0f7a4f;  /* primary emerald */
+  --color-brand-700: #0b5f3d;
+
+  --color-pos:   #0f7a4f;
+  --color-neg:   #b3261e;
+  --color-warn:  #b45309;
 }
 
-html, body, #root {
-  height: 100%;
-}
+html, body, #root { height: 100%; }
 body {
   margin: 0;
-  background: var(--color-canvas);
+  background: var(--color-paper);
   color: var(--color-ink);
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+input, select, button, textarea { font: inherit; }
+
+/* Monospaced, tabular figures for every amount/qty in the ledger. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
-/* Inputs comfortable on mobile; min 44px tap targets via utilities. */
-input, select, button, textarea { font: inherit; }
+/* Dense data tables (Tally-like). */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th {
+  text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--color-muted);
+  padding: 8px 12px; border-bottom: 1px solid var(--color-line); white-space: nowrap;
+}
+.tbl td { padding: 9px 12px; border-bottom: 1px solid var(--color-line); font-size: 14px; }
+.tbl tbody tr:hover { background: #fcfbf7; }
+.tbl .r { text-align: right; }

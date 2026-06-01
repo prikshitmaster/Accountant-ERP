@@ -36,12 +36,38 @@ export const rpc = {
   createOrganization: (name: string, fyStartMonth = 4) =>
     callRpc<string>('create_organization', { p_name: name, p_fy_start_month: fyStartMonth }),
 
-  createParty: (orgId: string, name: string, kind: string, phone?: string) =>
-    callRpc<string>('create_party', { p_org: orgId, p_name: name, p_kind: kind, p_phone: phone ?? null }),
+  createParty: (orgId: string, name: string, kind: string, phone?: string, gstin?: string, stateCode?: string) =>
+    callRpc<string>('create_party', {
+      p_org: orgId, p_name: name, p_kind: kind, p_phone: phone ?? null,
+      p_gstin: gstin ?? null, p_state_code: stateCode ?? null,
+    }),
 
-  createStockItem: (orgId: string, name: string, itemType: number, unit: string, minLevel = 0) =>
+  createStockItem: (orgId: string, name: string, itemType: number, unit: string, minLevel = 0, hsn?: string, gstRate = 0) =>
     callRpc<string>('create_stock_item', {
-      p_org: orgId, p_name: name, p_item_type: itemType, p_unit: unit, p_min_level: minLevel,
+      p_org: orgId, p_name: name, p_item_type: itemType, p_unit: unit,
+      p_min_level: minLevel, p_hsn: hsn ?? null, p_gst_rate: gstRate,
+    }),
+
+  sell: (orgId: string, date: string, party: string | null, items: unknown[], mode: string, narration?: string) =>
+    callRpc<{ voucher_no: string }>('sell', {
+      p_org: orgId, p_date: date, p_party: party, p_items: items, p_mode: mode, p_narration: narration ?? null,
+    }),
+
+  purchase: (orgId: string, date: string, party: string | null, items: unknown[], mode: string, narration?: string) =>
+    callRpc<{ voucher_no: string }>('purchase', {
+      p_org: orgId, p_date: date, p_party: party, p_items: items, p_mode: mode, p_narration: narration ?? null,
+    }),
+
+  receivePayment: (orgId: string, date: string, party: string, amountPaise: number, mode: string, allocations: unknown[], narration?: string) =>
+    callRpc<{ voucher_no: string }>('receive_payment', {
+      p_org: orgId, p_date: date, p_party: party, p_amount: amountPaise, p_mode: mode,
+      p_allocations: allocations, p_narration: narration ?? null,
+    }),
+
+  makePayment: (orgId: string, date: string, party: string, amountPaise: number, mode: string, allocations: unknown[], narration?: string) =>
+    callRpc<{ voucher_no: string }>('make_payment', {
+      p_org: orgId, p_date: date, p_party: party, p_amount: amountPaise, p_mode: mode,
+      p_allocations: allocations, p_narration: narration ?? null,
     }),
 
   expense: (orgId: string, date: string, expenseAccount: string, amountPaise: number, mode: 'cash' | 'bank', narration?: string) =>
