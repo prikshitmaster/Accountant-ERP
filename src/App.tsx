@@ -9,6 +9,7 @@ import { PurchasesPage } from '@/features/purchases/PurchasesPage'
 import { PartiesPage } from '@/features/masters/PartiesPage'
 import { ItemsPage } from '@/features/masters/ItemsPage'
 import { StockPage } from '@/features/stock/StockPage'
+import { ManufacturePage } from '@/features/stock/ManufacturePage'
 import { MoneyPage } from '@/features/money/MoneyPage'
 import { ReportsPage } from '@/features/reports/ReportsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/parties" element={<PartiesPage />} />
         <Route path="/items" element={<ItemsPage />} />
         <Route path="/stock" element={<StockPage />} />
+        <Route path="/manufacture" element={<ManufacturePage />} />
         <Route path="/money" element={<MoneyPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
