@@ -83,6 +83,7 @@ export function useAccounts(orgId: string | null) {
 export type Party = {
   id: string; name: string; kind: 'customer' | 'supplier' | 'both'
   phone: string | null; balance: number; gstin: string | null; state_code: string | null
+  group_name: string | null; city: string | null; credit_limit: number; credit_days: number
 }
 export function useParties(orgId: string | null, kind?: 'customer' | 'supplier') {
   return useQuery({
@@ -102,6 +103,8 @@ export type Item = {
   id: string; name: string; item_type: number; unit: string
   qty_on_hand: number; avg_cost: number; value_on_hand: number
   min_level: number; hsn: string | null; gst_rate: number
+  item_code: string | null; category: string | null; description: string | null
+  sale_price: number; purchase_price: number
 }
 export function useItems(orgId: string | null) {
   return useQuery({
@@ -110,7 +113,7 @@ export function useItems(orgId: string | null) {
     queryFn: async (): Promise<Item[]> => {
       const { data, error } = await supabase
         .from('stock_items')
-        .select('id, name, item_type, unit, qty_on_hand, avg_cost, value_on_hand, min_level, hsn, gst_rate')
+        .select('id, name, item_type, unit, qty_on_hand, avg_cost, value_on_hand, min_level, hsn, gst_rate, item_code, category, description, sale_price, purchase_price')
         .eq('org_id', orgId).order('name')
       if (error) throw error
       return (data ?? []) as Item[]

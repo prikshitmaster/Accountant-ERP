@@ -39,16 +39,34 @@ export const rpc = {
   createOrganization: (name: string, fyStartMonth = 4) =>
     callRpc<string>('create_organization', { p_name: name, p_fy_start_month: fyStartMonth }),
 
-  createParty: (orgId: string, name: string, kind: string, phone?: string, gstin?: string, stateCode?: string) =>
+  createParty: (
+    orgId: string, name: string, kind: string,
+    phone?: string, gstin?: string, stateCode?: string,
+    details: Record<string, unknown> = {},
+    opening?: { amount: number; type: 'dr' | 'cr'; date: string },
+  ) =>
     callRpc<string>('create_party', {
       p_org: orgId, p_name: name, p_kind: kind, p_phone: phone ?? null,
       p_gstin: gstin ?? null, p_state_code: stateCode ?? null,
+      p_details: details,
+      p_opening_amount: opening?.amount ?? 0,
+      p_opening_type: opening?.type ?? null,
+      p_opening_date: opening?.date ?? null,
     }),
 
-  createStockItem: (orgId: string, name: string, itemType: number, unit: string, minLevel = 0, hsn?: string, gstRate = 0) =>
+  createStockItem: (
+    orgId: string, name: string, itemType: number, unit: string,
+    minLevel = 0, hsn?: string, gstRate = 0,
+    details: Record<string, unknown> = {},
+    opening?: { qty: number; rate: number; date: string },
+  ) =>
     callRpc<string>('create_stock_item', {
       p_org: orgId, p_name: name, p_item_type: itemType, p_unit: unit,
       p_min_level: minLevel, p_hsn: hsn ?? null, p_gst_rate: gstRate,
+      p_details: details,
+      p_opening_qty: opening?.qty ?? 0,
+      p_opening_rate: opening?.rate ?? 0,
+      p_opening_date: opening?.date ?? null,
     }),
 
   sell: (orgId: string, date: string, party: string | null, items: unknown[], mode: string, narration?: string) =>
