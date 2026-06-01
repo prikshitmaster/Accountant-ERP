@@ -93,13 +93,17 @@ const run = async () => {
     check('trial balance balanced after co-product', await tb())
 
     // --- zero-cost guard ---
+    // A failing RPC aborts the surrounding transaction, so wrap the expected
+    // error in a SAVEPOINT to roll back just this statement and continue.
     const free = (await client.query(`select create_stock_item($1,'Free',1::smallint,'pc',0) as id`, [org])).rows[0].id
     let zeroErr = false
+    await client.query('savepoint sp_zero')
     try {
       await client.query(`select manufacture($1,'2026-04-14'::date,$2::jsonb,$3::jsonb,'zero')`,
         [org, JSON.stringify([{ stock_item_id: free, qty: 1 }]),
               JSON.stringify([{ stock_item_id: flour, qty: 1, weight: 1 }])])
-    } catch { zeroErr = true }
+      await client.query('release savepoint sp_zero')
+    } catch { zeroErr = true; await client.query('rollback to savepoint sp_zero') }
     check('zero-cost manufacture rejected', zeroErr)
 
     // --- cancel restores exactly ---
