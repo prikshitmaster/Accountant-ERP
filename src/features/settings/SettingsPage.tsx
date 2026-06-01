@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { rpc } from '@/lib/rpc'
 import { Card } from '@/components/ui/Card'
-import { Field, Select } from '@/components/ui/Input'
+import { Field, Select, Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 
 type Policy = 'block' | 'warn' | 'allow'
@@ -40,6 +41,7 @@ export function SettingsPage() {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Settings</h2>
+      {elevated && <PeriodLock />}
       <Card className="space-y-3">
         <Field label="Negative stock" hint="What happens when stock would go below zero.">
           <Select value={policy} onChange={(e) => setPolicy(e.target.value as Policy)} disabled={!elevated}>
@@ -56,5 +58,39 @@ export function SettingsPage() {
         )}
       </Card>
     </div>
+  )
+}
+
+function PeriodLock() {
+  const { currentOrgId } = useAuth()
+  const [date, setDate] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function lock() {
+    if (!currentOrgId || !date) return
+    setBusy(true); setMsg(null); setError(null)
+    try {
+      await rpc.closePeriod(currentOrgId, date)
+      setMsg(`Books locked up to ${date}. Earlier dates can no longer be posted.`)
+    } catch (err) { setError((err as Error).message) } finally { setBusy(false) }
+  }
+
+  return (
+    <Card className="space-y-3">
+      <div>
+        <p className="font-medium">Lock period</p>
+        <p className="text-xs text-muted">Prevent posting or editing on/before a date. Use after filing returns.</p>
+      </div>
+      <Field label="Lock everything up to">
+        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </Field>
+      {error && <p className="text-sm text-neg">{error}</p>}
+      {msg && <p className="text-sm text-pos">{msg}</p>}
+      <Button variant="secondary" onClick={lock} disabled={busy || !date} className="w-full">
+        {busy ? 'Locking…' : 'Lock period'}
+      </Button>
+    </Card>
   )
 }

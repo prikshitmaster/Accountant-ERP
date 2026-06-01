@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import {
   LayoutDashboard, TrendingUp, ShoppingCart, Wallet, Users, Package,
-  BarChart3, Settings, Menu, X, BookOpen,
+  BarChart3, Settings, Menu, X, BookOpen, Boxes,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/cn'
@@ -23,6 +23,7 @@ const groups: { heading?: string; items: Item[] }[] = [
     items: [
       { to: '/parties', label: 'Parties', icon: Users },
       { to: '/items', label: 'Items', icon: Package },
+      { to: '/stock', label: 'Stock', icon: Boxes },
     ],
   },
   {
@@ -156,6 +157,7 @@ export function AppShell() {
               {[
                 { to: '/parties', label: 'Parties', icon: Users },
                 { to: '/items', label: 'Items', icon: Package },
+                { to: '/stock', label: 'Stock', icon: Boxes },
                 { to: '/reports', label: 'Reports', icon: BarChart3 },
                 { to: '/settings', label: 'Settings', icon: Settings },
               ].map(({ to, label, icon: Icon }) => (

@@ -93,4 +93,7 @@ export const rpc = {
 
   cancelVoucher: (orgId: string, voucherId: string) =>
     callRpc('cancel_voucher', { p_org: orgId, p_voucher: voucherId }),
+
+  closePeriod: (orgId: string, lockUpto: string) =>
+    callRpc('close_period', { p_org: orgId, p_lock_upto: lockUpto }),
 }

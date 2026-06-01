@@ -3,12 +3,12 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import { useDayBook, useParties, usePartyLedger, useAged, useGstSummary } from '@/hooks/queries'
+import { useDayBook, useParties, usePartyLedger, useAged, useGstSummary, useProfitLoss, useBalanceSheet } from '@/hooks/queries'
 import { formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Input'
 
-type Tab = 'tb' | 'daybook' | 'ledger' | 'receivables' | 'payables' | 'gst'
+type Tab = 'tb' | 'pl' | 'bs' | 'daybook' | 'ledger' | 'receivables' | 'payables' | 'gst'
 type TBRow = { account_id: string; account_name: string; closing_debit: number; closing_credit: number }
 
 function useTrialBalance(orgId: string | null) {
@@ -30,7 +30,8 @@ export function ReportsPage() {
   const [tab, setTab] = useState<Tab>(initial)
 
   const TABS: [Tab, string][] = [
-    ['tb', 'Trial Balance'], ['daybook', 'Day Book'], ['ledger', 'Party Ledger'],
+    ['pl', 'Profit & Loss'], ['bs', 'Balance Sheet'], ['tb', 'Trial Balance'],
+    ['daybook', 'Day Book'], ['ledger', 'Party Ledger'],
     ['receivables', 'Receivables'], ['payables', 'Payables'], ['gst', 'GST'],
   ]
 
@@ -46,6 +47,8 @@ export function ReportsPage() {
         ))}
       </div>
 
+      {tab === 'pl' && <ProfitLoss orgId={currentOrgId} />}
+      {tab === 'bs' && <BalanceSheet orgId={currentOrgId} />}
       {tab === 'tb' && <TrialBalance orgId={currentOrgId} />}
       {tab === 'daybook' && <DayBook orgId={currentOrgId} />}
       {tab === 'ledger' && <PartyLedger orgId={currentOrgId} initialParty={params.get('ledger')} onParty={(id) => setParams(id ? { ledger: id } : {})} />}
@@ -86,6 +89,71 @@ function TrialBalance({ orgId }: { orgId: string | null }) {
           )}
         </table>
       </div>
+    </Card>
+  )
+}
+
+function Section({ title, rows, total }: { title: string; rows: { account_name: string; v: number }[]; total: number }) {
+  return (
+    <>
+      <tr className="bg-paper"><td className="font-semibold uppercase tracking-wide text-muted" colSpan={2} style={{ fontSize: 11 }}>{title}</td></tr>
+      {rows.map((r, i) => (
+        <tr key={i}><td className="pl-6">{r.account_name}</td><td className="r num">{formatINR(r.v, false)}</td></tr>
+      ))}
+      <tr className="font-semibold"><td className="pl-3">Total {title}</td><td className="r num">{formatINR(total, false)}</td></tr>
+    </>
+  )
+}
+
+function ProfitLoss({ orgId }: { orgId: string | null }) {
+  const { data = [] } = useProfitLoss(orgId)
+  const income = data.filter((r) => r.group_id === 4).map((r) => ({ account_name: r.account_name, v: r.amount ?? 0 }))
+  const expense = data.filter((r) => r.group_id === 5).map((r) => ({ account_name: r.account_name, v: r.amount ?? 0 }))
+  const ti = income.reduce((s, r) => s + r.v, 0)
+  const te = expense.reduce((s, r) => s + r.v, 0)
+  const net = ti - te
+  return (
+    <Card className="p-0">
+      <table className="tbl">
+        <tbody>
+          <Section title="Income" rows={income} total={ti} />
+          <Section title="Expenses (incl. COGS)" rows={expense} total={te} />
+          <tr className="border-t-2 border-line text-base font-bold">
+            <td>{net >= 0 ? 'Net Profit' : 'Net Loss'}</td>
+            <td className={`r num ${net >= 0 ? 'text-pos' : 'text-neg'}`}>{formatINR(Math.abs(net), false)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </Card>
+  )
+}
+
+function BalanceSheet({ orgId }: { orgId: string | null }) {
+  const { data: bs = [] } = useBalanceSheet(orgId)
+  const { data: pl = [] } = useProfitLoss(orgId)
+  const net = pl.filter((r) => r.group_id === 4).reduce((s, r) => s + (r.amount ?? 0), 0)
+    - pl.filter((r) => r.group_id === 5).reduce((s, r) => s + (r.amount ?? 0), 0)
+  const assets = bs.filter((r) => r.group_id === 1).map((r) => ({ account_name: r.account_name, v: r.balance ?? 0 }))
+  const liabilities = bs.filter((r) => r.group_id === 2).map((r) => ({ account_name: r.account_name, v: r.balance ?? 0 }))
+  const equity = bs.filter((r) => r.group_id === 3).map((r) => ({ account_name: r.account_name, v: r.balance ?? 0 }))
+  equity.push({ account_name: net >= 0 ? 'Current-year profit' : 'Current-year loss', v: net })
+  const ta = assets.reduce((s, r) => s + r.v, 0)
+  const tl = liabilities.reduce((s, r) => s + r.v, 0)
+  const teq = equity.reduce((s, r) => s + r.v, 0)
+  const balanced = ta === tl + teq
+  return (
+    <Card className="p-0">
+      <table className="tbl">
+        <tbody>
+          <Section title="Assets" rows={assets} total={ta} />
+          <Section title="Liabilities" rows={liabilities} total={tl} />
+          <Section title="Equity" rows={equity} total={teq} />
+          <tr className="border-t-2 border-line font-bold">
+            <td className={balanced ? 'text-pos' : 'text-neg'}>{balanced ? 'Balanced ✓' : 'Out of balance'}</td>
+            <td className="r num">A {formatINR(ta, false)} = L+E {formatINR(tl + teq, false)}</td>
+          </tr>
+        </tbody>
+      </table>
     </Card>
   )
 }

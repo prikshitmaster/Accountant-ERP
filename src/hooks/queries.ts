@@ -194,6 +194,58 @@ export function usePartyLedger(orgId: string | null, partyId: string | null) {
   })
 }
 
+export type StockLedgerRow = {
+  date: string; voucher_no: string | null; type_code: string | null
+  qty_change: number; unit_cost: number; value_change: number
+  balance_qty: number; balance_value: number; reason: string | null
+}
+export function useStockLedger(orgId: string | null, itemId: string | null) {
+  return useQuery({
+    queryKey: ['stock_ledger', orgId, itemId],
+    enabled: !!orgId && !!itemId,
+    queryFn: async (): Promise<StockLedgerRow[]> => {
+      const { data, error } = await supabase.from('v_stock_ledger')
+        .select('date, voucher_no, type_code, qty_change, unit_cost, value_change, balance_qty, balance_value, reason')
+        .eq('org_id', orgId).eq('stock_item_id', itemId).order('date').order('voucher_no')
+      if (error) throw error
+      return (data ?? []) as StockLedgerRow[]
+    },
+  })
+}
+
+export function useInventoryRecon(orgId: string | null) {
+  return useQuery({
+    queryKey: ['inv_recon', orgId], enabled: !!orgId,
+    queryFn: async (): Promise<{ ledger_balance: number; stock_value: number } | null> => {
+      const { data, error } = await supabase.from('v_inventory_reconciliation').select('*').eq('org_id', orgId).maybeSingle()
+      if (error) throw error
+      return data as { ledger_balance: number; stock_value: number } | null
+    },
+  })
+}
+
+export type FinRow = { account_id: string; account_name: string; group_id: number; amount?: number; balance?: number }
+export function useProfitLoss(orgId: string | null) {
+  return useQuery({
+    queryKey: ['pl', orgId], enabled: !!orgId,
+    queryFn: async (): Promise<FinRow[]> => {
+      const { data, error } = await supabase.from('v_profit_loss').select('*').eq('org_id', orgId).order('group_id')
+      if (error) throw error
+      return (data ?? []) as FinRow[]
+    },
+  })
+}
+export function useBalanceSheet(orgId: string | null) {
+  return useQuery({
+    queryKey: ['bs', orgId], enabled: !!orgId,
+    queryFn: async (): Promise<FinRow[]> => {
+      const { data, error } = await supabase.from('v_balance_sheet').select('*').eq('org_id', orgId).order('group_id')
+      if (error) throw error
+      return (data ?? []) as FinRow[]
+    },
+  })
+}
+
 export type GstSummary = { output_tax: number; input_credit: number; net_payable: number }
 export function useGstSummary(orgId: string | null) {
   return useQuery({
