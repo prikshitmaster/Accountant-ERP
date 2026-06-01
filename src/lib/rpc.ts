@@ -14,6 +14,9 @@ const ERROR_MAP: Record<string, string> = {
   opening_empty: 'Add at least one opening balance.',
   voucher_not_found: 'That voucher could not be found.',
   already_cancelled: 'This voucher is already cancelled.',
+  zero_cost_manufacture: 'The materials consumed have no cost — set their cost first.',
+  invalid_quantity: 'Quantities must be greater than zero.',
+  invalid_weight: 'Each finished good needs a cost weight greater than zero.',
 }
 
 export function friendlyError(message: string): string {
@@ -56,6 +59,18 @@ export const rpc = {
   purchase: (orgId: string, date: string, party: string | null, items: unknown[], mode: string, narration?: string) =>
     callRpc<{ voucher_no: string }>('purchase', {
       p_org: orgId, p_date: date, p_party: party, p_items: items, p_mode: mode, p_narration: narration ?? null,
+    }),
+
+  manufacture: (
+    orgId: string,
+    date: string,
+    inputs: { stock_item_id: string; qty: number }[],
+    outputs: { stock_item_id: string; qty: number; weight: number }[],
+    narration?: string,
+  ) =>
+    callRpc<{ voucher_no: string }>('manufacture', {
+      p_org: orgId, p_date: date, p_inputs: inputs, p_outputs: outputs,
+      p_narration: narration ?? null,
     }),
 
   receivePayment: (orgId: string, date: string, party: string, amountPaise: number, mode: string, allocations: unknown[], narration?: string) =>
