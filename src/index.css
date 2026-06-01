@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+/* ---- Design tokens (mobile-first accounting UI) ---- */
+@theme {
+  --color-brand-50:  #eef5ff;
+  --color-brand-100: #d9e8ff;
+  --color-brand-500: #2563eb;
+  --color-brand-600: #1d4ed8;
+  --color-brand-700: #1e40af;
+  --color-ink:       #0f172a;
+  --color-muted:     #64748b;
+  --color-line:      #e2e8f0;
+  --color-surface:   #ffffff;
+  --color-canvas:    #f6f8fb;
+  --color-pos:       #15803d;
+  --color-neg:       #b91c1c;
+}
+
+html, body, #root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Inputs comfortable on mobile; min 44px tap targets via utilities. */
+input, select, button, textarea { font: inherit; }
