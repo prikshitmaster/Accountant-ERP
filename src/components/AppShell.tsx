@@ -51,10 +51,12 @@ export function AppShell() {
   return (
     <div className="min-h-screen bg-paper">
       {/* ---------- Desktop sidebar ---------- */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-sidebar md:flex">
-        <div className="flex items-center gap-2 px-5 py-4 text-sidebar-ink">
-          <BookOpen size={20} className="text-brand-500" />
-          <span className="text-lg font-semibold tracking-tight">Bahi</span>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-sidebar md:flex">
+        <div className="flex items-center gap-2 px-5 py-5 text-ink">
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-600 text-white">
+            <BookOpen size={18} />
+          </span>
+          <span className="text-lg font-bold tracking-tight">Bahi</span>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 pb-4">
           {groups.map((g, i) => (
@@ -71,10 +73,10 @@ export function AppShell() {
                   end={end}
                   className={({ isActive }) =>
                     cn(
-                      'mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition',
+                      'mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition',
                       isActive
-                        ? 'bg-sidebar-soft font-medium text-white'
-                        : 'text-sidebar-ink hover:bg-sidebar-soft/60',
+                        ? 'bg-sidebar-soft font-semibold text-brand-700'
+                        : 'text-sidebar-ink hover:bg-canvas',
                     )
                   }
                 >

@@ -1,21 +1,16 @@
 import { Link } from 'react-router-dom'
-import { TrendingUp, ShoppingCart, Wallet } from 'lucide-react'
+import {
+  TrendingUp, ShoppingCart, Wallet, Landmark, Boxes,
+  ArrowDownLeft, ArrowUpRight, ReceiptText, Inbox, AlertTriangle,
+} from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useDashboard, useDayBook, useItems, useGstSummary } from '@/hooks/queries'
 import { formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
-
-function Stat({ label, value, tone, sub }: { label: string; value: number; tone?: 'pos' | 'neg'; sub?: string }) {
-  return (
-    <Card className="p-3.5">
-      <p className="text-xs text-muted">{label}</p>
-      <p className={`num mt-1 text-lg font-semibold ${tone === 'pos' ? 'text-pos' : tone === 'neg' ? 'text-neg' : ''}`}>
-        {formatINR(value)}
-      </p>
-      {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
-    </Card>
-  )
-}
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatCard } from '@/components/ui/StatCard'
+import { Badge } from '@/components/ui/Badge'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 export function Dashboard() {
   const { currentOrgId } = useAuth()
@@ -25,72 +20,110 @@ export function Dashboard() {
   const { data: gst } = useGstSummary(currentOrgId)
   const stockValue = items.reduce((s, i) => s + i.value_on_hand, 0)
   const lowStock = items.filter((i) => i.min_level > 0 && i.qty_on_hand <= i.min_level)
+  const gstNet = gst?.net_payable ?? 0
 
   const actions = [
-    { to: '/sales', label: 'New sale', icon: TrendingUp },
-    { to: '/purchases', label: 'New purchase', icon: ShoppingCart },
-    { to: '/money', label: 'Receive / Pay', icon: Wallet },
+    { to: '/sales', label: 'New sale', icon: TrendingUp, primary: true },
+    { to: '/purchases', label: 'New purchase', icon: ShoppingCart, primary: false },
+    { to: '/money', label: 'Receive / Pay', icon: Wallet, primary: false },
   ]
 
   return (
-    <div className="space-y-5">
-      <h2 className="text-xl font-semibold">Overview</h2>
-
-      <div className="flex flex-wrap gap-2">
-        {actions.map(({ to, label, icon: Icon }) => (
-          <Link key={to} to={to}
-            className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700">
-            <Icon size={16} /> {label}
-          </Link>
-        ))}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Home"
+        description="A live snapshot of your money, stock, and what's happening in the business."
+        action={
+          <div className="flex flex-wrap gap-2">
+            {actions.map(({ to, label, icon: Icon, primary }) => (
+              <Link
+                key={to}
+                to={to}
+                className={
+                  primary
+                    ? 'inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-brand-700'
+                    : 'inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-canvas'
+                }
+              >
+                <Icon size={16} /> {label}
+              </Link>
+            ))}
+          </div>
+        }
+      />
 
       {isLoading ? (
-        <p className="text-muted">Loading…</p>
-      ) : (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <Stat label="Cash in hand" value={data?.cash_balance ?? 0} />
-          <Stat label="Bank balance" value={data?.bank_balance ?? 0} />
-          <Stat label="Stock value" value={stockValue} />
-          <Stat label="Customers owe you" value={data?.receivables ?? 0} tone="pos" />
-          <Stat label="You owe suppliers" value={data?.payables ?? 0} tone="neg" />
-          <Stat
-            label={(gst?.net_payable ?? 0) >= 0 ? 'GST payable' : 'GST credit'}
-            value={Math.abs(gst?.net_payable ?? 0)}
-            tone={(gst?.net_payable ?? 0) >= 0 ? 'neg' : 'pos'}
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-24 animate-pulse rounded-2xl border border-line bg-surface" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 rise lg:grid-cols-3">
+          <StatCard label="Cash in hand" value={formatINR(data?.cash_balance ?? 0)} icon={Wallet} sub="Physical cash" />
+          <StatCard label="In the bank" value={formatINR(data?.bank_balance ?? 0)} icon={Landmark} sub="Bank balance" />
+          <StatCard label="Stock value" value={formatINR(stockValue)} icon={Boxes} sub={`${items.length} item${items.length === 1 ? '' : 's'}`} />
+          <StatCard label="Customers owe you" value={formatINR(data?.receivables ?? 0)} icon={ArrowDownLeft} tone="pos" sub="Money coming in" />
+          <StatCard label="You owe suppliers" value={formatINR(data?.payables ?? 0)} icon={ArrowUpRight} tone="neg" sub="Money going out" />
+          <StatCard
+            label={gstNet >= 0 ? 'GST payable' : 'GST credit'}
+            value={formatINR(Math.abs(gstNet))}
+            icon={ReceiptText}
+            tone={gstNet >= 0 ? 'neg' : 'pos'}
+            sub={gstNet >= 0 ? 'To pay this period' : 'In your favour'}
           />
         </div>
       )}
 
       {lowStock.length > 0 && (
-        <Card className="border-amber-300 bg-amber-50">
-          <p className="text-sm text-warn">
-            {lowStock.length} item(s) low on stock: {lowStock.slice(0, 3).map((i) => i.name).join(', ')}
-            {lowStock.length > 3 ? '…' : ''}
-          </p>
-        </Card>
+        <div className="flex items-start gap-3 rounded-2xl border border-[#fcd9a5] bg-[#fffbeb] p-4">
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#fef3c7] text-warn">
+            <AlertTriangle size={17} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink">
+              {lowStock.length} item{lowStock.length === 1 ? '' : 's'} running low
+            </p>
+            <p className="mt-0.5 text-sm text-muted">
+              {lowStock.slice(0, 3).map((i) => i.name).join(', ')}{lowStock.length > 3 ? ', and more' : ''} — time to restock.
+            </p>
+          </div>
+          <Link to="/stock" className="ml-auto shrink-0 self-center text-sm font-medium text-brand-600">View stock</Link>
+        </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Recent activity</h3>
-        <Link to="/reports" className="text-sm text-brand-600">View day book</Link>
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-ink">Recent activity</h2>
+          <Link to="/reports" className="text-sm font-medium text-brand-600">View day book</Link>
+        </div>
+        <Card className="p-0">
+          {rows.length ? (
+            <table className="tbl">
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.voucher_id}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-ink">{r.type_name}{r.party_name ? ` · ${r.party_name}` : ''}</p>
+                        {r.status === 'cancelled' && <Badge tone="muted">Cancelled</Badge>}
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted">{formatDate(r.date)} · <span className="num">{r.voucher_no}</span></p>
+                    </td>
+                    <td className={`r num font-semibold ${r.status === 'cancelled' ? 'text-muted line-through' : 'text-ink'}`}>{formatINR(r.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <EmptyState
+              icon={Inbox}
+              title="Nothing here yet"
+              description="Your sales, purchases, and payments will show up here as you record them."
+            />
+          )}
+        </Card>
       </div>
-      <Card className="p-0">
-        <table className="tbl">
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.voucher_id}>
-                <td>
-                  <p className="font-medium">{r.type_name}{r.party_name ? ` · ${r.party_name}` : ''}</p>
-                  <p className="text-xs text-muted">{formatDate(r.date)} · <span className="num">{r.voucher_no}</span>{r.status === 'cancelled' ? ' · cancelled' : ''}</p>
-                </td>
-                <td className={`r num font-medium ${r.status === 'cancelled' ? 'text-muted line-through' : ''}`}>{formatINR(r.amount)}</td>
-              </tr>
-            ))}
-            {!rows.length && <tr><td className="py-6 text-center text-muted">No transactions yet.</td></tr>}
-          </tbody>
-        </table>
-      </Card>
     </div>
   )
 }
