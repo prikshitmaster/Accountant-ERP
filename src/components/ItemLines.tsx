@@ -8,12 +8,13 @@ export const emptyLine = (): Line => ({ stock_item_id: '', qty: '', rate: '' })
 
 /** Editor for sale/purchase lines. Computes base + GST preview. */
 export function ItemLines({
-  items, value, onChange, rateLabel,
+  items, value, onChange, rateLabel, priceField,
 }: {
   items: Item[]
   value: Line[]
   onChange: (lines: Line[]) => void
   rateLabel: string
+  priceField?: 'sale_price' | 'purchase_price'
 }) {
   const set = (i: number, patch: Partial<Line>) =>
     onChange(value.map((l, idx) => (idx === i ? { ...l, ...patch } : l)))
@@ -44,7 +45,12 @@ export function ItemLines({
                 <Select
                   className="h-10 flex-1"
                   value={l.stock_item_id}
-                  onChange={(e) => set(i, { stock_item_id: e.target.value, rate: l.rate || '' })}
+                  onChange={(e) => {
+                    const picked = items.find((it) => it.id === e.target.value)
+                    const price = priceField && picked ? picked[priceField] : 0
+                    const prefill = !l.rate && price ? String(price / 100) : l.rate
+                    set(i, { stock_item_id: e.target.value, rate: prefill || '' })
+                  }}
                 >
                   <option value="" disabled>Select item…</option>
                   {items.map((opt) => (

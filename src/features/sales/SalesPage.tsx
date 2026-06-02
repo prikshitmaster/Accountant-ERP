@@ -28,6 +28,12 @@ export function SalesPage() {
   const [msg, setMsg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const selectedParty = customers.find((p) => p.id === party)
+  const linesTotalPaise = lines.reduce((s, l) => s + Math.round(Number(l.qty || 0) * rupeesToPaise(l.rate || '0')), 0)
+  const overLimit =
+    mode === 'credit' && selectedParty && selectedParty.credit_limit > 0 &&
+    selectedParty.balance + linesTotalPaise > selectedParty.credit_limit
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!currentOrgId) return
@@ -70,8 +76,14 @@ export function SalesPage() {
                 </Select>
               </Field>
             )}
-            <ItemLines items={items} value={lines} onChange={setLines} rateLabel="Sale price" />
+            <ItemLines items={items} value={lines} onChange={setLines} rateLabel="Sale price" priceField="sale_price" />
             <Field label="Note (optional)"><Input value={narration} onChange={(e) => setNarration(e.target.value)} /></Field>
+            {overLimit && (
+              <p className="text-sm text-warn">
+                ⚠ This sale puts {selectedParty!.name} over their credit limit
+                ({formatINR(selectedParty!.credit_limit)}). You can still save.
+              </p>
+            )}
             {error && <p className="text-sm text-neg">{error}</p>}
             {msg && <p className="text-sm text-pos">{msg}</p>}
             <Button type="submit" size="lg" className="w-full" disabled={busy}>{busy ? 'Saving…' : 'Record sale'}</Button>

@@ -70,7 +70,7 @@ export function PurchasesPage() {
                 </Select>
               </Field>
             )}
-            <ItemLines items={items} value={lines} onChange={setLines} rateLabel="Cost price" />
+            <ItemLines items={items} value={lines} onChange={setLines} rateLabel="Cost price" priceField="purchase_price" />
             <Field label="Note (optional)"><Input value={narration} onChange={(e) => setNarration(e.target.value)} /></Field>
             {error && <p className="text-sm text-neg">{error}</p>}
             {msg && <p className="text-sm text-pos">{msg}</p>}
