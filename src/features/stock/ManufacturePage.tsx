@@ -8,6 +8,7 @@ import { formatINR } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Field, Select, Input } from '@/components/ui/Input'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -72,7 +73,7 @@ export function ManufacturePage() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-semibold">Manufacture</h2>
+      <PageHeader title="Manufacture" description="Turn raw materials into finished goods — cost flows across automatically." />
       <Card>
         <form onSubmit={submit} className="space-y-4">
           <Field label="Date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></Field>

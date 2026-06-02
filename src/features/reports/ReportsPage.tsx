@@ -7,6 +7,7 @@ import { useDayBook, useParties, usePartyLedger, useAged, useGstSummary, useProf
 import { formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Input'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 type Tab = 'tb' | 'pl' | 'bs' | 'daybook' | 'ledger' | 'receivables' | 'payables' | 'gst'
 type TBRow = { account_id: string; account_name: string; closing_debit: number; closing_credit: number }
@@ -37,7 +38,7 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-semibold">Reports</h2>
+      <PageHeader title="Reports" description="Trial balance, P&L, balance sheet, ledgers, and GST — ready to export." />
       <div className="flex flex-wrap gap-2">
         {TABS.map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}

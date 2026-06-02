@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Field, Select, Input } from '@/components/ui/Input'
 import { ItemLines, emptyLine, type Line } from '@/components/ItemLines'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -47,7 +48,7 @@ export function PurchasesPage() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-semibold">Purchases</h2>
+      <PageHeader title="Purchases" description="Record what you buy and what you still owe your suppliers." />
       <div className="grid gap-5 md:grid-cols-2">
         <Card>
           <h3 className="mb-3 font-semibold">New purchase</h3>

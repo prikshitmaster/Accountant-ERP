@@ -8,6 +8,7 @@ import { formatINR, rupeesToPaise } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Select } from '@/components/ui/Input'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const ITEM_TYPES = [
@@ -72,12 +73,15 @@ export function ItemsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Items</h2>
-        <Button onClick={() => setOpen((o) => !o)} variant={open ? 'secondary' : 'primary'}>
-          {open ? 'Close' : '+ New item'}
-        </Button>
-      </div>
+      <PageHeader
+        title="Items"
+        description="Everything you buy, make, or sell — with stock, pricing, and tax."
+        action={
+          <Button onClick={() => setOpen((o) => !o)} variant={open ? 'secondary' : 'primary'}>
+            {open ? 'Close' : '+ New item'}
+          </Button>
+        }
+      />
 
       {open && (
         <Card>

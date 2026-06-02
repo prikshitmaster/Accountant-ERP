@@ -10,6 +10,7 @@ import { GST_STATES, stateName } from '@/lib/states'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Select } from '@/components/ui/Input'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const maskAadhaar = (v: string) => {
@@ -104,12 +105,15 @@ export function PartiesPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Parties</h2>
-        <Button onClick={() => setOpen((o) => !o)} variant={open ? 'secondary' : 'primary'}>
-          {open ? 'Close' : '+ New party'}
-        </Button>
-      </div>
+      <PageHeader
+        title="Parties"
+        description="Your customers and suppliers — balances, contacts, and tax details."
+        action={
+          <Button onClick={() => setOpen((o) => !o)} variant={open ? 'secondary' : 'primary'}>
+            {open ? 'Close' : '+ New party'}
+          </Button>
+        }
+      />
 
       {open && (
         <Card>

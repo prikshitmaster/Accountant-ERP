@@ -7,6 +7,7 @@ import { rupeesToPaise, formatINR, formatDate, paiseToRupees } from '@/lib/money
 import { Button } from '@/components/ui/Button'
 import { Input, Field, Select } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 type Action = 'receive' | 'pay' | 'expense' | 'transfer' | 'capital' | 'drawings'
 const today = () => new Date().toISOString().slice(0, 10)
@@ -39,7 +40,7 @@ export function MoneyPage() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-semibold">Money</h2>
+      <PageHeader title="Money" description="Receive payments, pay bills, move cash between accounts, and log expenses." />
       <div className="flex flex-wrap gap-2">
         {tabs.filter((t) => t.show).map((t) => (
           <button key={t.id} onClick={() => setAction(t.id)}

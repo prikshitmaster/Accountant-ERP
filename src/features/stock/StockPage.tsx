@@ -4,6 +4,7 @@ import { useItems, useStockLedger, useInventoryRecon } from '@/hooks/queries'
 import { formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Input'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 export function StockPage() {
   const { currentOrgId } = useAuth()
@@ -18,7 +19,7 @@ export function StockPage() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-semibold">Stock</h2>
+      <PageHeader title="Stock" description="See what you have on hand and confirm your books match your inventory." />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card><p className="text-xs text-muted">Total stock value</p><p className="num mt-1 text-lg font-semibold">{formatINR(totalValue)}</p></Card>
