@@ -1,33 +1,47 @@
 @import "tailwindcss";
 
 /* ============================================================
-   "Ledger terminal" — warm paper content, dark sidebar chrome,
-   emerald money accent, IBM Plex type, tabular-mono numerals.
+   Bahi design system — "calm clarity"
+   A refined, trustworthy fintech look: airy light canvas, white
+   cards, soft depth, one confident indigo accent, semantic
+   green/red for money. Plain-language, self-explanatory screens.
+   Token NAMES are preserved app-wide; only values evolved.
    ============================================================ */
 @theme {
-  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  --color-paper:   #faf8f3;   /* content background (warm) */
+  /* Surfaces & text (cool, calm neutrals) */
+  --color-paper:   #f6f7f9;   /* app canvas */
+  --color-canvas:  #f1f3f6;   /* subtle hover / inset fill */
   --color-surface: #ffffff;   /* cards */
-  --color-ink:     #17140d;   /* near-black warm */
-  --color-muted:   #7b7568;   /* secondary text */
-  --color-line:    #e8e3d7;   /* warm hairline */
+  --color-ink:     #0f172a;   /* slate-900 */
+  --color-muted:   #64748b;   /* slate-500 secondary text */
+  --color-line:    #e8ebf0;   /* soft cool hairline */
 
-  --color-sidebar:      #0e1726;  /* dark chrome */
-  --color-sidebar-soft: #1b2638;
-  --color-sidebar-ink:  #c7d0dd;
-  --color-sidebar-dim:  #6b7689;
+  /* Left navigation — light, clean, with indigo active state */
+  --color-sidebar:      #ffffff;   /* nav background */
+  --color-sidebar-soft: #eef1ff;   /* active item fill (indigo-50) */
+  --color-sidebar-ink:  #334155;   /* nav text (slate-700) */
+  --color-sidebar-dim:  #94a3b8;   /* nav section labels (slate-400) */
 
-  --color-brand-50:  #e9f6ef;
-  --color-brand-100: #c9ead8;
-  --color-brand-500: #138a5a;
-  --color-brand-600: #0f7a4f;  /* primary emerald */
-  --color-brand-700: #0b5f3d;
+  /* Brand — confident indigo */
+  --color-brand-50:  #eef1ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;   /* primary */
+  --color-brand-700: #4338ca;
 
-  --color-pos:   #0f7a4f;
-  --color-neg:   #b3261e;
-  --color-warn:  #b45309;
+  /* Semantic money cues */
+  --color-pos:   #059669;   /* emerald-600 — money in / they owe */
+  --color-neg:   #e11d48;   /* rose-600 — money out / we owe */
+  --color-warn:  #d97706;   /* amber-600 — attention */
+
+  /* Soft, layered shadows (Stripe-like depth) */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10), 0 4px 8px rgba(15, 23, 42, 0.04);
 }
 
 html, body, #root { height: 100%; }
@@ -38,6 +52,7 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  letter-spacing: -0.011em;   /* subtle tightening for a refined feel */
 }
 input, select, button, textarea { font: inherit; }
 
@@ -48,13 +63,43 @@ input, select, button, textarea { font: inherit; }
   letter-spacing: -0.01em;
 }
 
-/* Dense data tables (Tally-like). */
+/* ---- Data tables: airy, legible, calm ---- */
 .tbl { width: 100%; border-collapse: collapse; }
 .tbl th {
-  text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .06em;
   text-transform: uppercase; color: var(--color-muted);
-  padding: 8px 12px; border-bottom: 1px solid var(--color-line); white-space: nowrap;
+  padding: 12px 16px; border-bottom: 1px solid var(--color-line); white-space: nowrap;
 }
-.tbl td { padding: 9px 12px; border-bottom: 1px solid var(--color-line); font-size: 14px; }
-.tbl tbody tr:hover { background: #fcfbf7; }
+.tbl td {
+  padding: 13px 16px; border-bottom: 1px solid var(--color-line);
+  font-size: 14px; color: var(--color-ink);
+}
+.tbl tbody tr:last-child td { border-bottom: 0; }
+.tbl tbody tr { transition: background .12s ease; }
+.tbl tbody tr:hover { background: var(--color-paper); }
 .tbl .r { text-align: right; }
+
+/* ---- Status badges (Paid / Due / Posted …) ---- */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 9999px;
+  font-size: 12px; font-weight: 600; line-height: 1.5;
+}
+.badge-pos  { background: #ecfdf5; color: #047857; }
+.badge-neg  { background: #fff1f2; color: #be123c; }
+.badge-warn { background: #fffbeb; color: #b45309; }
+.badge-muted{ background: var(--color-canvas); color: var(--color-muted); }
+.badge-brand{ background: var(--color-brand-50); color: var(--color-brand-700); }
+
+/* Soft card elevation helper */
+.card-elev { box-shadow: var(--shadow-sm); }
+
+/* One orchestrated entrance — staggered, calm (no scattered motion) */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise .4s cubic-bezier(.22,.61,.36,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .rise { animation: none; }
+}
