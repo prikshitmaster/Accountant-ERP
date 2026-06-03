@@ -1,5 +1,6 @@
 import { Trash2, Plus } from 'lucide-react'
 import type { Item } from '@/hooks/queries'
+import { ItemCombobox } from './ItemCombobox'
 import { formatINR, rupeesToPaise } from '@/lib/money'
 
 export type Line = { stock_item_id: string; qty: string; rate: string }
@@ -55,20 +56,14 @@ export function ItemTable({
               <tr key={i}>
                 <td className="num text-muted">{i + 1}</td>
                 <td>
-                  <select
-                    className="w-full bg-transparent text-sm outline-none"
+                  <ItemCombobox
+                    items={items}
                     value={l.stock_item_id}
-                    onChange={(e) => {
-                      const picked = items.find((x) => x.id === e.target.value)
-                      const prefill = !l.rate && picked?.sale_price ? String(picked.sale_price / 100) : l.rate
-                      set(i, { stock_item_id: e.target.value, rate: prefill || '' })
+                    onChange={(id, item) => {
+                      const prefill = !l.rate && item?.sale_price ? String(item.sale_price / 100) : l.rate
+                      set(i, { stock_item_id: id, rate: prefill || '' })
                     }}
-                  >
-                    <option value="" disabled>Select item…</option>
-                    {items.map((opt) => (
-                      <option key={opt.id} value={opt.id}>{opt.name}</option>
-                    ))}
-                  </select>
+                  />
                 </td>
                 <td className="text-muted text-sm">{it?.unit ?? '—'}</td>
                 <td className="r">
