@@ -289,6 +289,17 @@ export type InvoiceDetail = {
   org_name: string
   org_gstin: string | null
   org_state_code: string | null
+  org_pan_no: string | null
+  org_phone: string | null
+  org_email: string | null
+  org_address_line1: string | null
+  org_address_line2: string | null
+  org_city: string | null
+  org_pincode: string | null
+  org_bank_name: string | null
+  org_bank_account_no: string | null
+  org_bank_ifsc: string | null
+  org_upi: string | null
   party_gstin: string | null
   party_state_code: string | null
   lines: InvoiceDetailLine[]
@@ -322,6 +333,17 @@ export function useInvoiceDetail(orgId: string | null, invoiceId: string | null)
         org_name:         String(first.org_name ?? ''),
         org_gstin:        first.org_gstin        ? String(first.org_gstin)        : null,
         org_state_code:   first.org_state_code   ? String(first.org_state_code)   : null,
+        org_pan_no:          first.org_pan_no          ? String(first.org_pan_no)          : null,
+        org_phone:           first.org_phone           ? String(first.org_phone)           : null,
+        org_email:           first.org_email           ? String(first.org_email)           : null,
+        org_address_line1:   first.org_address_line1   ? String(first.org_address_line1)   : null,
+        org_address_line2:   first.org_address_line2   ? String(first.org_address_line2)   : null,
+        org_city:            first.org_city            ? String(first.org_city)            : null,
+        org_pincode:         first.org_pincode         ? String(first.org_pincode)         : null,
+        org_bank_name:       first.org_bank_name       ? String(first.org_bank_name)       : null,
+        org_bank_account_no: first.org_bank_account_no ? String(first.org_bank_account_no) : null,
+        org_bank_ifsc:       first.org_bank_ifsc       ? String(first.org_bank_ifsc)       : null,
+        org_upi:             first.org_upi             ? String(first.org_upi)             : null,
         party_gstin:      first.party_gstin      ? String(first.party_gstin)      : null,
         party_state_code: first.party_state_code ? String(first.party_state_code) : null,
         lines: data.map((r) => {
@@ -339,6 +361,41 @@ export function useInvoiceDetail(orgId: string | null, invoiceId: string | null)
           }
         }),
       }
+    },
+  })
+}
+
+export type OrgSettings = {
+  org_id: string
+  business_name: string | null
+  gstin: string | null
+  state_code: string | null
+  pan_no: string | null
+  phone: string | null
+  email: string | null
+  address_line1: string | null
+  address_line2: string | null
+  city: string | null
+  pincode: string | null
+  bank_name: string | null
+  bank_account_no: string | null
+  bank_ifsc: string | null
+  upi: string | null
+  negative_stock_policy: string
+}
+
+export function useOrgSettings(orgId: string | null) {
+  return useQuery({
+    queryKey: ['org_settings', orgId],
+    enabled: !!orgId,
+    queryFn: async (): Promise<OrgSettings | null> => {
+      const { data, error } = await supabase
+        .from('org_settings')
+        .select('*')
+        .eq('org_id', orgId)
+        .maybeSingle()
+      if (error) throw error
+      return data as OrgSettings | null
     },
   })
 }
