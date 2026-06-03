@@ -17,10 +17,11 @@ create index if not exists invoice_lines_invoice_id_idx on invoice_lines (invoic
 
 -- ---------- RLS ----------
 alter table invoice_lines enable row level security;
+drop policy if exists "org member" on invoice_lines;
 create policy "org member" on invoice_lines for all using (
   org_id in (select org_id from memberships where user_id = auth.uid())
 );
-grant select, insert, update, delete on invoice_lines to authenticated;
+grant select on invoice_lines to authenticated;
 
 -- ---------- Updated sell (GST-aware + populates invoice_lines) ----------
 create or replace function sell(
@@ -102,7 +103,7 @@ begin
         (it->>'stock_item_id')::uuid,
         (it->>'qty')::numeric,
         (it->>'rate')::bigint,
-        round((it->>'qty')::numeric * (it->>'rate')::bigint)
+        round((it->>'qty')::numeric * (it->>'rate')::bigint)::bigint
       );
     end loop;
   end if;
