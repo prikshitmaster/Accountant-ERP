@@ -426,3 +426,30 @@ export function useMonthlyPL(orgId: string | null) {
     },
   })
 }
+
+export type MonthlyCashFlow = {
+  month: string
+  incoming: number  // paise — debits to cash/bank
+  outgoing: number  // paise — credits to cash/bank
+}
+
+export function useMonthlyCashFlow(orgId: string | null) {
+  return useQuery({
+    queryKey: ['monthly_cashflow', orgId],
+    enabled: !!orgId,
+    queryFn: async (): Promise<MonthlyCashFlow[]> => {
+      const { data, error } = await supabase
+        .from('v_monthly_cashflow')
+        .select('month, incoming, outgoing')
+        .eq('org_id', orgId)
+        .order('month', { ascending: true })
+        .limit(12)
+      if (error) throw error
+      return (data ?? []).map((r) => ({
+        month:    String(r.month),
+        incoming: Number(r.incoming),
+        outgoing: Number(r.outgoing),
+      }))
+    },
+  })
+}

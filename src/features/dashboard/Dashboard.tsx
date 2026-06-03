@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import { TrendingUp, ShoppingCart, Wallet, Landmark, Boxes, ReceiptText, Inbox, AlertTriangle } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useAuth } from '@/hooks/useAuth'
-import { useDashboard, useDayBook, useItems, useGstSummary, useAged, useMonthlyPL, useOrgSettings } from '@/hooks/queries'
+import { useDashboard, useDayBook, useItems, useGstSummary, useAged, useMonthlyPL, useMonthlyCashFlow, useOrgSettings } from '@/hooks/queries'
 import { formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -28,6 +28,7 @@ export function Dashboard() {
   const { data: recAged = [] } = useAged(currentOrgId, 'receivables')
   const { data: payAged = [] } = useAged(currentOrgId, 'payables')
   const { data: monthly = [] } = useMonthlyPL(currentOrgId)
+  const { data: cashflow = [] } = useMonthlyCashFlow(currentOrgId)
   const { data: settings } = useOrgSettings(currentOrgId)
 
   const stockValue = items.reduce((s, i) => s + i.value_on_hand, 0)
@@ -53,6 +54,17 @@ export function Dashboard() {
 
   const totalIncome  = monthly.reduce((s, m) => s + m.income,  0)
   const totalExpense = monthly.reduce((s, m) => s + m.expense, 0)
+
+  const totalIncoming = cashflow.reduce((s, m) => s + m.incoming, 0)
+  const totalOutgoing  = cashflow.reduce((s, m) => s + m.outgoing,  0)
+  const openingCash    = (data?.cash_balance ?? 0) + (data?.bank_balance ?? 0) - (totalIncoming - totalOutgoing)
+  const closingCash    = (data?.cash_balance ?? 0) + (data?.bank_balance ?? 0)
+
+  const cashChartData = cashflow.map((m) => ({
+    month:    new Date(m.month).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
+    incoming: Math.round(m.incoming / 100),
+    outgoing: Math.round(m.outgoing / 100),
+  }))
 
   const orgName = settings?.business_name ?? 'your business'
 
@@ -118,6 +130,69 @@ export function Dashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Cash Flow Chart */}
+      <Card>
+        <div className="flex items-start justify-between mb-4">
+          <p className="font-semibold text-ink">Cash Flow</p>
+          <span className="text-xs text-muted">This Fiscal Year</span>
+        </div>
+        <div className="flex gap-4">
+          <div className="flex-1 min-w-0">
+            {cashChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={cashChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="incGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="outGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} />
+                  <Tooltip formatter={(v) => [`₹${Number(v ?? 0).toLocaleString('en-IN')}`, '']} contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                  <Area type="monotone" dataKey="incoming" name="Incoming" stroke="#22c55e" fill="url(#incGrad)" strokeWidth={2} dot={false} />
+                  <Area type="monotone" dataKey="outgoing"  name="Outgoing"  stroke="#ef4444" fill="url(#outGrad)" strokeWidth={2} dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-[200px] items-center justify-center text-sm text-muted">No cash transactions yet.</div>
+            )}
+          </div>
+          {/* Right legend */}
+          <div className="w-44 shrink-0 space-y-4 text-right text-sm">
+            <div>
+              <p className="text-xs text-muted flex items-center justify-end gap-1">
+                <span className="inline-block h-2 w-2 rounded-full bg-[#9ca3af]" /> Opening Cash
+              </p>
+              <p className="font-semibold text-ink num">{formatINR(Math.max(0, openingCash))}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted flex items-center justify-end gap-1">
+                <span className="inline-block h-2 w-2 rounded-full bg-[#22c55e]" /> Incoming
+              </p>
+              <p className="font-semibold text-[#22c55e] num">{formatINR(totalIncoming, false)} ( + )</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted flex items-center justify-end gap-1">
+                <span className="inline-block h-2 w-2 rounded-full bg-[#ef4444]" /> Outgoing
+              </p>
+              <p className="font-semibold text-[#ef4444] num">{formatINR(totalOutgoing, false)} ( − )</p>
+            </div>
+            <div className="border-t border-line pt-3">
+              <p className="text-xs text-muted flex items-center justify-end gap-1">
+                <span className="inline-block h-2 w-2 rounded-full bg-brand-600" /> Closing Cash
+              </p>
+              <p className="font-semibold text-ink num">{formatINR(closingCash, false)} ( = )</p>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* Income & Expense Chart */}
       <Card>
