@@ -283,6 +283,9 @@ export type InvoiceDetail = {
   party_id: string
   party_name: string
   narration: string | null
+  discount_amount: number
+  freight_amount: number
+  round_off: number
   org_name: string
   org_gstin: string | null
   org_state_code: string | null
@@ -313,6 +316,9 @@ export function useInvoiceDetail(orgId: string | null, invoiceId: string | null)
         party_id:    first.party_id    as string,
         party_name:  first.party_name  as string,
         narration:   first.narration   as string | null,
+        discount_amount: Number(first.discount_amount),
+        freight_amount:  Number(first.freight_amount),
+        round_off:       Number(first.round_off),
         org_name:         String(first.org_name ?? ''),
         org_gstin:        first.org_gstin        ? String(first.org_gstin)        : null,
         org_state_code:   first.org_state_code   ? String(first.org_state_code)   : null,

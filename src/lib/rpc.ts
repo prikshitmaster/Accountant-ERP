@@ -69,9 +69,10 @@ export const rpc = {
       p_opening_date: opening?.date ?? null,
     }),
 
-  sell: (orgId: string, date: string, party: string | null, items: unknown[], mode: string, narration?: string) =>
+  sell: (orgId: string, date: string, party: string | null, items: unknown[], mode: string, narration?: string, discount = 0, freight = 0) =>
     callRpc<{ voucher_no: string }>('sell', {
-      p_org: orgId, p_date: date, p_party: party, p_items: items, p_mode: mode, p_narration: narration ?? null,
+      p_org: orgId, p_date: date, p_party: party, p_items: items, p_mode: mode,
+      p_narration: narration ?? null, p_discount: discount, p_freight: freight,
     }),
 
   purchase: (orgId: string, date: string, party: string | null, items: unknown[], mode: string, narration?: string) =>
