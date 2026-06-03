@@ -261,3 +261,66 @@ export function useGstSummary(orgId: string | null) {
     },
   })
 }
+
+export type InvoiceDetailLine = {
+  line_id: string
+  stock_item_id: string
+  item_name: string
+  unit: string
+  gst_rate: number
+  qty: number
+  rate: number   // paise per unit
+  amount: number // paise
+}
+
+export type InvoiceDetail = {
+  invoice_id: string
+  invoice_no: string
+  date: string
+  total: number
+  outstanding: number
+  party_id: string
+  party_name: string
+  narration: string | null
+  lines: InvoiceDetailLine[]
+}
+
+export function useInvoiceDetail(orgId: string | null, invoiceId: string | null) {
+  return useQuery({
+    queryKey: ['invoice_detail', orgId, invoiceId],
+    enabled: !!orgId && !!invoiceId,
+    queryFn: async (): Promise<InvoiceDetail | null> => {
+      const { data, error } = await supabase
+        .from('v_invoice_detail')
+        .select('*')
+        .eq('org_id', orgId)
+        .eq('invoice_id', invoiceId)
+      if (error) throw error
+      if (!data || data.length === 0) return null
+      const first = data[0] as Record<string, unknown>
+      return {
+        invoice_id:  first.invoice_id  as string,
+        invoice_no:  first.invoice_no  as string,
+        date:        first.date        as string,
+        total:       first.total       as number,
+        outstanding: first.outstanding as number,
+        party_id:    first.party_id    as string,
+        party_name:  first.party_name  as string,
+        narration:   first.narration   as string | null,
+        lines: data.map((r) => {
+          const row = r as Record<string, unknown>
+          return {
+            line_id:       row.line_id       as string,
+            stock_item_id: row.stock_item_id as string,
+            item_name:     row.item_name     as string,
+            unit:          row.unit          as string,
+            gst_rate:      Number(row.gst_rate),
+            qty:           Number(row.qty),
+            rate:          row.rate          as number,
+            amount:        row.amount        as number,
+          }
+        }),
+      }
+    },
+  })
+}
