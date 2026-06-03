@@ -60,7 +60,7 @@ export function ItemTable({
                     value={l.stock_item_id}
                     onChange={(e) => {
                       const picked = items.find((x) => x.id === e.target.value)
-                      const prefill = picked?.sale_price ? String(picked.sale_price / 100) : l.rate
+                      const prefill = !l.rate && picked?.sale_price ? String(picked.sale_price / 100) : l.rate
                       set(i, { stock_item_id: e.target.value, rate: prefill || '' })
                     }}
                   >
