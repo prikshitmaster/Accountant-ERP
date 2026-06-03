@@ -399,3 +399,30 @@ export function useOrgSettings(orgId: string | null) {
     },
   })
 }
+
+export type MonthlyPL = {
+  month: string   // ISO date string — first day of month
+  income: number  // paise
+  expense: number // paise
+}
+
+export function useMonthlyPL(orgId: string | null) {
+  return useQuery({
+    queryKey: ['monthly_pl', orgId],
+    enabled: !!orgId,
+    queryFn: async (): Promise<MonthlyPL[]> => {
+      const { data, error } = await supabase
+        .from('v_monthly_pl')
+        .select('month, income, expense')
+        .eq('org_id', orgId)
+        .order('month', { ascending: true })
+        .limit(12)
+      if (error) throw error
+      return (data ?? []).map((r) => ({
+        month:   String(r.month),
+        income:  Number(r.income),
+        expense: Number(r.expense),
+      }))
+    },
+  })
+}
