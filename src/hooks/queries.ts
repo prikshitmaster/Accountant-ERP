@@ -158,6 +158,49 @@ export function useBills(orgId: string | null, partyId?: string, openOnly = fals
   })
 }
 
+export type ReturnNote = {
+  voucher_id: string
+  voucher_no: string
+  date: string
+  party_name: string | null
+  amount: number
+  status: string
+}
+
+export function useCreditNotes(orgId: string | null) {
+  return useQuery({
+    queryKey: ['credit_notes', orgId],
+    enabled: !!orgId,
+    queryFn: async (): Promise<ReturnNote[]> => {
+      const { data, error } = await supabase
+        .from('v_day_book')
+        .select('voucher_id, voucher_no, date, party_name, amount, status')
+        .eq('org_id', orgId)
+        .eq('type_code', 'CREDIT_NOTE')
+        .order('date', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as ReturnNote[]
+    },
+  })
+}
+
+export function useDebitNotes(orgId: string | null) {
+  return useQuery({
+    queryKey: ['debit_notes', orgId],
+    enabled: !!orgId,
+    queryFn: async (): Promise<ReturnNote[]> => {
+      const { data, error } = await supabase
+        .from('v_day_book')
+        .select('voucher_id, voucher_no, date, party_name, amount, status')
+        .eq('org_id', orgId)
+        .eq('type_code', 'DEBIT_NOTE')
+        .order('date', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as ReturnNote[]
+    },
+  })
+}
+
 export type AgedRow = {
   party_name: string; invoice_no?: string; bill_no?: string; date: string
   outstanding: number; age_days: number

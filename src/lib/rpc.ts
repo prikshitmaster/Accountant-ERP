@@ -17,6 +17,8 @@ const ERROR_MAP: Record<string, string> = {
   zero_cost_manufacture: 'The materials consumed have no cost — set their cost first.',
   invalid_quantity: 'Quantities must be greater than zero.',
   invalid_weight: 'Each finished good needs a cost weight greater than zero.',
+  return_qty_exceeds: 'Return quantity exceeds the original quantity sold.',
+  insufficient_stock: 'Not enough stock to process this purchase return.',
 }
 
 export function friendlyError(message: string): string {
@@ -78,6 +80,24 @@ export const rpc = {
   purchase: (orgId: string, date: string, party: string | null, items: unknown[], mode: string, narration?: string) =>
     callRpc<{ voucher_no: string }>('purchase', {
       p_org: orgId, p_date: date, p_party: party, p_items: items, p_mode: mode, p_narration: narration ?? null,
+    }),
+
+  salesReturn: (
+    orgId: string, date: string, party: string, items: unknown[],
+    mode: 'credit' | 'cash' | 'bank', narration?: string,
+  ) =>
+    callRpc<{ voucher_no: string }>('sales_return', {
+      p_org: orgId, p_date: date, p_party: party, p_items: items,
+      p_mode: mode, p_narration: narration ?? null,
+    }),
+
+  purchaseReturn: (
+    orgId: string, date: string, party: string, items: unknown[],
+    mode: 'credit' | 'cash' | 'bank', narration?: string,
+  ) =>
+    callRpc<{ voucher_no: string }>('purchase_return', {
+      p_org: orgId, p_date: date, p_party: party, p_items: items,
+      p_mode: mode, p_narration: narration ?? null,
     }),
 
   manufacture: (
