@@ -64,7 +64,7 @@ begin
     v_stock := v_stock || jsonb_build_array(jsonb_build_object(
       'stock_item_id', v_item.id,
       'qty_change',    v_qty,
-      'value_change',  round(v_qty * v_item.avg_cost),
+      'unit_cost',     v_item.avg_cost,
       'reason',        'Sales Return'));
   end loop;
 
@@ -203,3 +203,6 @@ begin
   return post_voucher(p_org, 8::smallint, p_date, p_party, p_narration, v_lines, v_stock);
 end;
 $$;
+
+grant execute on function sales_return(uuid, date, uuid, jsonb, text, text) to authenticated;
+grant execute on function purchase_return(uuid, date, uuid, jsonb, text, text) to authenticated;
