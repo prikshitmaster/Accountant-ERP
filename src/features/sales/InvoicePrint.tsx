@@ -3,7 +3,8 @@ import { formatINR, formatDate } from '@/lib/money'
 
 export function InvoicePrint({ inv }: { inv: InvoiceDetail }) {
   const subtotal = inv.lines.reduce((s, l) => s + l.amount, 0)
-  const totalGst = inv.total - subtotal
+  const taxable  = subtotal - inv.discount_amount
+  const totalGst = inv.total - taxable - inv.freight_amount - inv.round_off
 
   const isInter =
     !!inv.org_state_code &&
@@ -78,6 +79,18 @@ export function InvoicePrint({ inv }: { inv: InvoiceDetail }) {
               <td className="pr-8 py-1">Subtotal</td>
               <td className="text-right font-mono">{formatINR(subtotal, false)}</td>
             </tr>
+            {inv.discount_amount > 0 && (
+              <tr>
+                <td className="pr-8 py-1">− Discount</td>
+                <td className="text-right font-mono">{formatINR(inv.discount_amount, false)}</td>
+              </tr>
+            )}
+            {inv.discount_amount > 0 && (
+              <tr>
+                <td className="pr-8 py-1">Taxable</td>
+                <td className="text-right font-mono">{formatINR(taxable, false)}</td>
+              </tr>
+            )}
             {totalGst > 0 && hasStateInfo && !isInter && (
               <>
                 <tr>
@@ -102,8 +115,22 @@ export function InvoicePrint({ inv }: { inv: InvoiceDetail }) {
                 <td className="text-right font-mono">{formatINR(totalGst, false)}</td>
               </tr>
             )}
+            {inv.freight_amount > 0 && (
+              <tr>
+                <td className="pr-8 py-1">+ Freight</td>
+                <td className="text-right font-mono">{formatINR(inv.freight_amount, false)}</td>
+              </tr>
+            )}
+            {inv.round_off !== 0 && (
+              <tr>
+                <td className="pr-8 py-1">Round-off</td>
+                <td className="text-right font-mono">
+                  {inv.round_off > 0 ? '+' : '−'}{formatINR(Math.abs(inv.round_off), false)}
+                </td>
+              </tr>
+            )}
             <tr className="border-t border-black font-semibold">
-              <td className="pr-8 py-1">Total</td>
+              <td className="pr-8 py-1">Bill Amount</td>
               <td className="text-right font-mono">{formatINR(inv.total)}</td>
             </tr>
           </tbody>

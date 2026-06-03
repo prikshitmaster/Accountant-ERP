@@ -36,9 +36,10 @@ export function SaleDetailPage() {
     )
   }
 
-  const subtotal = inv.lines.reduce((s, l) => s + l.amount, 0)
-  const gst      = inv.total - subtotal
-  const isPaid   = inv.outstanding === 0
+  const subtotal    = inv.lines.reduce((s, l) => s + l.amount, 0)
+  const taxable     = subtotal - inv.discount_amount
+  const gst         = inv.total - taxable - inv.freight_amount - inv.round_off
+  const isPaid      = inv.outstanding === 0
 
   return (
     <div className="space-y-5">
@@ -104,14 +105,34 @@ export function SaleDetailPage() {
                 <td colSpan={6} className="r text-sm text-muted">Subtotal</td>
                 <td className="r num text-sm">{formatINR(subtotal, false)}</td>
               </tr>
+              {inv.discount_amount > 0 && (
+                <tr>
+                  <td colSpan={6} className="r text-sm text-muted">− Discount</td>
+                  <td className="r num text-sm">{formatINR(inv.discount_amount, false)}</td>
+                </tr>
+              )}
               {gst > 0 && (
                 <tr>
                   <td colSpan={6} className="r text-sm text-muted">GST</td>
                   <td className="r num text-sm">{formatINR(gst, false)}</td>
                 </tr>
               )}
+              {inv.freight_amount > 0 && (
+                <tr>
+                  <td colSpan={6} className="r text-sm text-muted">+ Freight</td>
+                  <td className="r num text-sm">{formatINR(inv.freight_amount, false)}</td>
+                </tr>
+              )}
+              {inv.round_off !== 0 && (
+                <tr>
+                  <td colSpan={6} className="r text-sm text-muted">Round-off</td>
+                  <td className="r num text-sm">
+                    {inv.round_off > 0 ? '+' : '−'}{formatINR(Math.abs(inv.round_off), false)}
+                  </td>
+                </tr>
+              )}
               <tr>
-                <td colSpan={6} className="r text-sm font-semibold">Total</td>
+                <td colSpan={6} className="r text-sm font-semibold">Bill Amount</td>
                 <td className="r num text-sm font-semibold">{formatINR(inv.total)}</td>
               </tr>
             </tfoot>
