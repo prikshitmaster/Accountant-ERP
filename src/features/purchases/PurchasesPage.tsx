@@ -171,8 +171,7 @@ export function PurchasesPage() {
         </Card>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
-        <Card>
+      <Card>
           <h3 className="mb-3 font-semibold text-pos">New Debit Note (Return)</h3>
           <form onSubmit={submitDebitNote} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -196,7 +195,6 @@ export function PurchasesPage() {
               disabled={dnBusy}>{dnBusy ? 'Saving…' : 'Record debit note'}</Button>
           </form>
         </Card>
-      </div>
     </div>
   )
 }
