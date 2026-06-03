@@ -5,6 +5,7 @@ import { CreateOrg } from '@/features/onboarding/CreateOrg'
 import { AppShell } from '@/components/AppShell'
 import { Dashboard } from '@/features/dashboard/Dashboard'
 import { SalesPage } from '@/features/sales/SalesPage'
+import { SaleDetailPage } from '@/features/sales/SaleDetailPage'
 import { PurchasesPage } from '@/features/purchases/PurchasesPage'
 import { PartiesPage } from '@/features/masters/PartiesPage'
 import { ItemsPage } from '@/features/masters/ItemsPage'
@@ -31,6 +32,7 @@ export default function App() {
       <Route element={<AppShell />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/sales" element={<SalesPage />} />
+        <Route path="/sales/:id" element={<SaleDetailPage />} />
         <Route path="/purchases" element={<PurchasesPage />} />
         <Route path="/parties" element={<PartiesPage />} />
         <Route path="/items" element={<ItemsPage />} />
