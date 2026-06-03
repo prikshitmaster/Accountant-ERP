@@ -302,8 +302,8 @@ export function useInvoiceDetail(orgId: string | null, invoiceId: string | null)
         invoice_id:  first.invoice_id  as string,
         invoice_no:  first.invoice_no  as string,
         date:        first.date        as string,
-        total:       first.total       as number,
-        outstanding: first.outstanding as number,
+        total:       Number(first.total),
+        outstanding: Number(first.outstanding),
         party_id:    first.party_id    as string,
         party_name:  first.party_name  as string,
         narration:   first.narration   as string | null,
@@ -316,8 +316,8 @@ export function useInvoiceDetail(orgId: string | null, invoiceId: string | null)
             unit:          row.unit          as string,
             gst_rate:      Number(row.gst_rate),
             qty:           Number(row.qty),
-            rate:          row.rate          as number,
-            amount:        row.amount        as number,
+            rate:          Number(row.rate),
+            amount:        Number(row.amount),
           }
         }),
       }
