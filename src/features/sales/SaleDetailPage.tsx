@@ -1,10 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
+import { Printer } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useInvoiceDetail } from '@/hooks/queries'
 import { formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { InvoicePrint } from './InvoicePrint'
 
 export function SaleDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -40,19 +42,29 @@ export function SaleDetailPage() {
 
   return (
     <div className="space-y-5">
-      <button
-        onClick={() => navigate('/sales')}
-        className="flex items-center gap-1.5 text-sm text-muted hover:text-ink"
-      >
-        <ArrowLeft size={16} /> Back to Sales
-      </button>
+      <div className="no-print flex items-center justify-between">
+        <button
+          onClick={() => navigate('/sales')}
+          className="flex items-center gap-1.5 text-sm text-muted hover:text-ink"
+        >
+          <ArrowLeft size={16} /> Back to Sales
+        </button>
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
+        >
+          <Printer size={16} /> Print
+        </button>
+      </div>
 
-      <PageHeader
-        title={`Invoice ${inv.invoice_no}`}
-        description={`${formatDate(inv.date)} · ${inv.party_name}`}
-      />
+      <div className="no-print">
+        <PageHeader
+          title={`Invoice ${inv.invoice_no}`}
+          description={`${formatDate(inv.date)} · ${inv.party_name}`}
+        />
+      </div>
 
-      <div className="flex items-center gap-3">
+      <div className="no-print flex items-center gap-3">
         {isPaid ? (
           <span className="badge badge-pos">Paid</span>
         ) : (
@@ -60,7 +72,7 @@ export function SaleDetailPage() {
         )}
       </div>
 
-      <Card className="p-0">
+      <Card className="no-print p-0">
         <div className="overflow-x-auto">
           <table className="tbl">
             <thead>
@@ -108,8 +120,10 @@ export function SaleDetailPage() {
       </Card>
 
       {inv.narration && (
-        <p className="text-sm text-muted">Note: {inv.narration}</p>
+        <p className="no-print text-sm text-muted">Note: {inv.narration}</p>
       )}
+
+      <InvoicePrint inv={inv} />
     </div>
   )
 }

@@ -103,3 +103,10 @@ input, select, button, textarea { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .rise { animation: none; }
 }
+
+/* ---- Print: show only InvoicePrint, hide app chrome ---- */
+@media print {
+  nav, aside, header { display: none !important; }
+  body { background: white !important; }
+  .no-print { display: none !important; }
+}
