@@ -267,6 +267,7 @@ export type InvoiceDetailLine = {
   stock_item_id: string
   item_name: string
   unit: string
+  hsn: string | null
   gst_rate: number
   qty: number
   rate: number   // paise per unit
@@ -282,6 +283,11 @@ export type InvoiceDetail = {
   party_id: string
   party_name: string
   narration: string | null
+  org_name: string
+  org_gstin: string | null
+  org_state_code: string | null
+  party_gstin: string | null
+  party_state_code: string | null
   lines: InvoiceDetailLine[]
 }
 
@@ -307,6 +313,11 @@ export function useInvoiceDetail(orgId: string | null, invoiceId: string | null)
         party_id:    first.party_id    as string,
         party_name:  first.party_name  as string,
         narration:   first.narration   as string | null,
+        org_name:         String(first.org_name ?? ''),
+        org_gstin:        first.org_gstin        ? String(first.org_gstin)        : null,
+        org_state_code:   first.org_state_code   ? String(first.org_state_code)   : null,
+        party_gstin:      first.party_gstin      ? String(first.party_gstin)      : null,
+        party_state_code: first.party_state_code ? String(first.party_state_code) : null,
         lines: data.map((r) => {
           const row = r as Record<string, unknown>
           return {
@@ -314,6 +325,7 @@ export function useInvoiceDetail(orgId: string | null, invoiceId: string | null)
             stock_item_id: row.stock_item_id as string,
             item_name:     row.item_name     as string,
             unit:          row.unit          as string,
+            hsn:           row.hsn ? String(row.hsn) : null,
             gst_rate:      Number(row.gst_rate),
             qty:           Number(row.qty),
             rate:          Number(row.rate),
