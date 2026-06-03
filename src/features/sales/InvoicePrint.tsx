@@ -25,7 +25,20 @@ export function InvoicePrint({ inv }: { inv: InvoiceDetail }) {
         <div>
           <p className="font-semibold text-base">{inv.org_name}</p>
           {inv.org_gstin && <p className="text-xs mt-0.5">GSTIN: {inv.org_gstin}</p>}
-          {inv.org_state_code && <p className="text-xs">State Code: {inv.org_state_code}</p>}
+          {(inv.org_state_code || inv.org_pan_no) && (
+            <p className="text-xs">
+              {inv.org_state_code && `State: ${inv.org_state_code}`}
+              {inv.org_state_code && inv.org_pan_no && '  |  '}
+              {inv.org_pan_no && `PAN: ${inv.org_pan_no}`}
+            </p>
+          )}
+          {inv.org_address_line1 && <p className="text-xs mt-0.5">{inv.org_address_line1}</p>}
+          {inv.org_address_line2 && <p className="text-xs">{inv.org_address_line2}</p>}
+          {(inv.org_city || inv.org_pincode) && (
+            <p className="text-xs">{[inv.org_city, inv.org_pincode].filter(Boolean).join(' - ')}</p>
+          )}
+          {inv.org_phone && <p className="text-xs mt-0.5">Ph: {inv.org_phone}</p>}
+          {inv.org_email && <p className="text-xs">E: {inv.org_email}</p>}
         </div>
         <div className="text-right">
           <p><span className="font-medium">Invoice No:</span> {inv.invoice_no}</p>
@@ -140,6 +153,21 @@ export function InvoicePrint({ inv }: { inv: InvoiceDetail }) {
       {/* Narration */}
       {inv.narration && (
         <p className="text-xs text-gray-600 mb-6">Note: {inv.narration}</p>
+      )}
+
+      {/* Payment Details */}
+      {(inv.org_bank_name || inv.org_upi) && (
+        <div className="border border-black p-3 mb-4 text-xs">
+          <p className="font-semibold mb-1">Payment Details</p>
+          {inv.org_bank_name && (
+            <p>
+              Bank: {inv.org_bank_name}
+              {inv.org_bank_account_no && ` | A/c: ${inv.org_bank_account_no}`}
+              {inv.org_bank_ifsc && ` | IFSC: ${inv.org_bank_ifsc}`}
+            </p>
+          )}
+          {inv.org_upi && <p className="mt-0.5">UPI: {inv.org_upi}</p>}
+        </div>
       )}
 
       {/* Footer */}
