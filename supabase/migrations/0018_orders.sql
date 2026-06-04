@@ -148,17 +148,6 @@ left join org_settings os on os.org_id = b.org_id;
 
 grant select on v_bill_detail to authenticated;
 
--- Sequence helpers (must be before tables that reference them)
-create or replace function next_so_no(p_org uuid) returns text
-language sql security definer set search_path = public as $$
-  select 'SO-' || lpad(((select count(*) from sales_orders where org_id = p_org) + 1)::text, 5, '0');
-$$;
-
-create or replace function next_po_no(p_org uuid) returns text
-language sql security definer set search_path = public as $$
-  select 'PO-' || lpad(((select count(*) from purchase_orders where org_id = p_org) + 1)::text, 5, '0');
-$$;
-
 -- sales_orders
 create table if not exists sales_orders (
   id                uuid primary key default gen_random_uuid(),
@@ -236,6 +225,17 @@ create policy "org member" on purchase_order_lines for all using (
     and po.org_id in (select org_id from memberships where user_id = auth.uid()))
 );
 grant select, insert on purchase_order_lines to authenticated;
+
+-- Sequence helpers (defined after the tables they reference)
+create or replace function next_so_no(p_org uuid) returns text
+language sql security definer set search_path = public as $$
+  select 'SO-' || lpad(((select count(*) from sales_orders where org_id = p_org) + 1)::text, 5, '0');
+$$;
+
+create or replace function next_po_no(p_org uuid) returns text
+language sql security definer set search_path = public as $$
+  select 'PO-' || lpad(((select count(*) from purchase_orders where org_id = p_org) + 1)::text, 5, '0');
+$$;
 
 -- v_sales_orders (list view)
 create or replace view v_sales_orders with (security_invoker = on) as
