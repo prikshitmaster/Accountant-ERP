@@ -163,10 +163,11 @@ begin
         v_sgst := v_sgst + v_gst;
       end if;
     end if;
-    -- stock reduction at avg_cost (tracked by post_voucher stock journal)
+    -- explicit value_change = -v_line_base so stock journal matches GL inventory credit
     v_stock := v_stock || jsonb_build_array(jsonb_build_object(
       'stock_item_id', v_item.id,
       'qty_change',    -v_qty,
+      'value_change',  -v_line_base,
       'reason',        'Purchase Return'));
   end loop;
 
