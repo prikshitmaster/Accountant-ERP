@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { useParties, useItems, useBills, useDebitNotes } from '@/hooks/queries'
@@ -14,6 +15,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 export function PurchasesPage() {
   const { currentOrgId } = useAuth()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const { data: suppliers = [] } = useParties(currentOrgId, 'supplier')
   const { data: items = [] } = useItems(currentOrgId)
@@ -134,7 +136,7 @@ export function PurchasesPage() {
                 <thead><tr><th>No.</th><th>Supplier</th><th>Date</th><th className="r">Total</th><th className="r">Due</th></tr></thead>
                 <tbody>
                   {bills.map((b) => (
-                    <tr key={b.id}>
+                    <tr key={b.id} className="cursor-pointer" onClick={() => navigate('/purchases/' + b.id)}>
                       <td className="num">{b.bill_no}</td>
                       <td>{partyName(b.party_id)}</td>
                       <td className="num">{formatDate(b.date)}</td>

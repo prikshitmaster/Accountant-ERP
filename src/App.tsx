@@ -7,6 +7,7 @@ import { Dashboard } from '@/features/dashboard/Dashboard'
 import { SalesPage } from '@/features/sales/SalesPage'
 import { SaleDetailPage } from '@/features/sales/SaleDetailPage'
 import { PurchasesPage } from '@/features/purchases/PurchasesPage'
+import { PurchaseDetailPage } from '@/features/purchases/PurchaseDetailPage'
 import { PartiesPage } from '@/features/masters/PartiesPage'
 import { ItemsPage } from '@/features/masters/ItemsPage'
 import { StockPage } from '@/features/stock/StockPage'
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/sales" element={<SalesPage />} />
         <Route path="/sales/:id" element={<SaleDetailPage />} />
         <Route path="/purchases" element={<PurchasesPage />} />
+        <Route path="/purchases/:id" element={<PurchaseDetailPage />} />
         <Route path="/parties" element={<PartiesPage />} />
         <Route path="/items" element={<ItemsPage />} />
         <Route path="/stock" element={<StockPage />} />
