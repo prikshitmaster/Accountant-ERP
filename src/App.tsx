@@ -6,8 +6,12 @@ import { AppShell } from '@/components/AppShell'
 import { Dashboard } from '@/features/dashboard/Dashboard'
 import { SalesPage } from '@/features/sales/SalesPage'
 import { SaleDetailPage } from '@/features/sales/SaleDetailPage'
+import { SalesOrdersPage } from '@/features/sales/SalesOrdersPage'
+import { SalesOrderDetailPage } from '@/features/sales/SalesOrderDetailPage'
 import { PurchasesPage } from '@/features/purchases/PurchasesPage'
 import { PurchaseDetailPage } from '@/features/purchases/PurchaseDetailPage'
+import { PurchaseOrdersPage } from '@/features/purchases/PurchaseOrdersPage'
+import { PurchaseOrderDetailPage } from '@/features/purchases/PurchaseOrderDetailPage'
 import { PartiesPage } from '@/features/masters/PartiesPage'
 import { ItemsPage } from '@/features/masters/ItemsPage'
 import { StockPage } from '@/features/stock/StockPage'
@@ -34,8 +38,12 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/sales" element={<SalesPage />} />
         <Route path="/sales/:id" element={<SaleDetailPage />} />
+        <Route path="/sales-orders" element={<SalesOrdersPage />} />
+        <Route path="/sales-orders/:id" element={<SalesOrderDetailPage />} />
         <Route path="/purchases" element={<PurchasesPage />} />
         <Route path="/purchases/:id" element={<PurchaseDetailPage />} />
+        <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+        <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
         <Route path="/parties" element={<PartiesPage />} />
         <Route path="/items" element={<ItemsPage />} />
         <Route path="/stock" element={<StockPage />} />

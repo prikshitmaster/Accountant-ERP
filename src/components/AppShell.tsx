@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import {
   LayoutDashboard, TrendingUp, ShoppingCart, Wallet, Users, Package,
-  BarChart3, Settings, Menu, X, BookOpen, Boxes, Factory,
+  BarChart3, Settings, Menu, X, BookOpen, Boxes, Factory, ClipboardList,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/cn'
@@ -14,7 +14,9 @@ const groups: { heading?: string; items: Item[] }[] = [
     heading: 'Transactions',
     items: [
       { to: '/sales', label: 'Sales', icon: TrendingUp },
+      { to: '/sales-orders', label: 'Sales Orders', icon: ClipboardList },
       { to: '/purchases', label: 'Purchases', icon: ShoppingCart },
+      { to: '/purchase-orders', label: 'Purchase Orders', icon: ClipboardList },
       { to: '/money', label: 'Money', icon: Wallet },
     ],
   },
