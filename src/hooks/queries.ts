@@ -496,3 +496,229 @@ export function useMonthlyCashFlow(orgId: string | null) {
     },
   })
 }
+
+// ---- Sales Orders ----
+export type SalesOrder = {
+  id: string; org_id: string; so_no: string; date: string
+  party_id: string; party_name: string; delivery_date: string | null
+  status: 'draft' | 'confirmed' | 'invoiced' | 'cancelled'
+  narration: string | null; discount_amount: number; freight_amount: number
+  linked_voucher_id: string | null; total: number
+}
+export function useSalesOrders(orgId: string | null) {
+  return useQuery({
+    queryKey: ['sales_orders', orgId],
+    enabled: !!orgId,
+    queryFn: async (): Promise<SalesOrder[]> => {
+      const { data, error } = await supabase
+        .from('v_sales_orders').select('*').eq('org_id', orgId)
+        .order('date', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as SalesOrder[]
+    },
+  })
+}
+
+export type OrderDetailLine = {
+  line_id: string; stock_item_id: string; item_name: string
+  unit: string; hsn: string | null; gst_rate: number
+  qty: number; rate: number; amount: number
+}
+export type SalesOrderDetail = {
+  so_id: string; org_id: string; so_no: string; date: string
+  party_id: string; party_name: string
+  party_gstin: string | null; party_state_code: string | null
+  delivery_date: string | null
+  status: 'draft' | 'confirmed' | 'invoiced' | 'cancelled'
+  narration: string | null; discount_amount: number; freight_amount: number
+  linked_voucher_id: string | null
+  org_name: string; org_gstin: string | null; org_state_code: string | null
+  org_phone: string | null; org_email: string | null
+  org_address_line1: string | null; org_address_line2: string | null
+  org_city: string | null; org_pincode: string | null
+  lines: OrderDetailLine[]
+}
+export function useSalesOrderDetail(orgId: string | null, soId: string | null) {
+  return useQuery({
+    queryKey: ['so_detail', orgId, soId],
+    enabled: !!orgId && !!soId,
+    queryFn: async (): Promise<SalesOrderDetail | null> => {
+      const { data, error } = await supabase
+        .from('v_sales_order_detail').select('*')
+        .eq('org_id', orgId).eq('so_id', soId)
+      if (error) throw error
+      if (!data || data.length === 0) return null
+      const f = data[0] as Record<string, unknown>
+      return {
+        so_id: f.so_id as string, org_id: f.org_id as string,
+        so_no: f.so_no as string, date: f.date as string,
+        party_id: f.party_id as string, party_name: f.party_name as string,
+        party_gstin: f.party_gstin ? String(f.party_gstin) : null,
+        party_state_code: f.party_state_code ? String(f.party_state_code) : null,
+        delivery_date: f.delivery_date ? String(f.delivery_date) : null,
+        status: f.status as SalesOrderDetail['status'],
+        narration: f.narration ? String(f.narration) : null,
+        discount_amount: Number(f.discount_amount), freight_amount: Number(f.freight_amount),
+        linked_voucher_id: f.linked_voucher_id ? String(f.linked_voucher_id) : null,
+        org_name: String(f.org_name ?? ''),
+        org_gstin: f.org_gstin ? String(f.org_gstin) : null,
+        org_state_code: f.org_state_code ? String(f.org_state_code) : null,
+        org_phone: f.org_phone ? String(f.org_phone) : null,
+        org_email: f.org_email ? String(f.org_email) : null,
+        org_address_line1: f.org_address_line1 ? String(f.org_address_line1) : null,
+        org_address_line2: f.org_address_line2 ? String(f.org_address_line2) : null,
+        org_city: f.org_city ? String(f.org_city) : null,
+        org_pincode: f.org_pincode ? String(f.org_pincode) : null,
+        lines: data.map((r) => {
+          const row = r as Record<string, unknown>
+          return {
+            line_id: row.line_id as string, stock_item_id: row.stock_item_id as string,
+            item_name: row.item_name as string, unit: row.unit as string,
+            hsn: row.hsn ? String(row.hsn) : null, gst_rate: Number(row.gst_rate),
+            qty: Number(row.qty), rate: Number(row.rate), amount: Number(row.amount),
+          }
+        }),
+      }
+    },
+  })
+}
+
+// ---- Purchase Orders ----
+export type PurchaseOrder = {
+  id: string; org_id: string; po_no: string; date: string
+  party_id: string; party_name: string; delivery_date: string | null
+  status: 'draft' | 'confirmed' | 'billed' | 'cancelled'
+  narration: string | null; linked_voucher_id: string | null; total: number
+}
+export function usePurchaseOrders(orgId: string | null) {
+  return useQuery({
+    queryKey: ['purchase_orders', orgId],
+    enabled: !!orgId,
+    queryFn: async (): Promise<PurchaseOrder[]> => {
+      const { data, error } = await supabase
+        .from('v_purchase_orders').select('*').eq('org_id', orgId)
+        .order('date', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as PurchaseOrder[]
+    },
+  })
+}
+
+export type PurchaseOrderDetail = {
+  po_id: string; org_id: string; po_no: string; date: string
+  party_id: string; party_name: string
+  party_gstin: string | null; party_state_code: string | null
+  delivery_date: string | null
+  status: 'draft' | 'confirmed' | 'billed' | 'cancelled'
+  narration: string | null; linked_voucher_id: string | null
+  org_name: string; org_gstin: string | null; org_state_code: string | null
+  org_phone: string | null; org_email: string | null
+  org_address_line1: string | null; org_address_line2: string | null
+  org_city: string | null; org_pincode: string | null
+  lines: OrderDetailLine[]
+}
+export function usePurchaseOrderDetail(orgId: string | null, poId: string | null) {
+  return useQuery({
+    queryKey: ['po_detail', orgId, poId],
+    enabled: !!orgId && !!poId,
+    queryFn: async (): Promise<PurchaseOrderDetail | null> => {
+      const { data, error } = await supabase
+        .from('v_purchase_order_detail').select('*')
+        .eq('org_id', orgId).eq('po_id', poId)
+      if (error) throw error
+      if (!data || data.length === 0) return null
+      const f = data[0] as Record<string, unknown>
+      return {
+        po_id: f.po_id as string, org_id: f.org_id as string,
+        po_no: f.po_no as string, date: f.date as string,
+        party_id: f.party_id as string, party_name: f.party_name as string,
+        party_gstin: f.party_gstin ? String(f.party_gstin) : null,
+        party_state_code: f.party_state_code ? String(f.party_state_code) : null,
+        delivery_date: f.delivery_date ? String(f.delivery_date) : null,
+        status: f.status as PurchaseOrderDetail['status'],
+        narration: f.narration ? String(f.narration) : null,
+        linked_voucher_id: f.linked_voucher_id ? String(f.linked_voucher_id) : null,
+        org_name: String(f.org_name ?? ''),
+        org_gstin: f.org_gstin ? String(f.org_gstin) : null,
+        org_state_code: f.org_state_code ? String(f.org_state_code) : null,
+        org_phone: f.org_phone ? String(f.org_phone) : null,
+        org_email: f.org_email ? String(f.org_email) : null,
+        org_address_line1: f.org_address_line1 ? String(f.org_address_line1) : null,
+        org_address_line2: f.org_address_line2 ? String(f.org_address_line2) : null,
+        org_city: f.org_city ? String(f.org_city) : null,
+        org_pincode: f.org_pincode ? String(f.org_pincode) : null,
+        lines: data.map((r) => {
+          const row = r as Record<string, unknown>
+          return {
+            line_id: row.line_id as string, stock_item_id: row.stock_item_id as string,
+            item_name: row.item_name as string, unit: row.unit as string,
+            hsn: row.hsn ? String(row.hsn) : null, gst_rate: Number(row.gst_rate),
+            qty: Number(row.qty), rate: Number(row.rate), amount: Number(row.amount),
+          }
+        }),
+      }
+    },
+  })
+}
+
+// ---- Bill Detail ----
+export type BillDetail = {
+  bill_id: string; org_id: string; bill_no: string; date: string
+  total: number; outstanding: number
+  party_id: string; party_name: string
+  party_gstin: string | null; party_state_code: string | null
+  narration: string | null
+  org_name: string; org_gstin: string | null; org_state_code: string | null
+  org_pan_no: string | null; org_phone: string | null; org_email: string | null
+  org_address_line1: string | null; org_address_line2: string | null
+  org_city: string | null; org_pincode: string | null
+  org_bank_name: string | null; org_bank_account_no: string | null
+  org_bank_ifsc: string | null; org_upi: string | null
+  lines: OrderDetailLine[]
+}
+export function useBillDetail(orgId: string | null, billId: string | null) {
+  return useQuery({
+    queryKey: ['bill_detail', orgId, billId],
+    enabled: !!orgId && !!billId,
+    queryFn: async (): Promise<BillDetail | null> => {
+      const { data, error } = await supabase
+        .from('v_bill_detail').select('*')
+        .eq('org_id', orgId).eq('bill_id', billId)
+      if (error) throw error
+      if (!data || data.length === 0) return null
+      const f = data[0] as Record<string, unknown>
+      return {
+        bill_id: f.bill_id as string, org_id: f.org_id as string,
+        bill_no: f.bill_no as string, date: f.date as string,
+        total: Number(f.total), outstanding: Number(f.outstanding),
+        party_id: f.party_id as string, party_name: f.party_name as string,
+        party_gstin: f.party_gstin ? String(f.party_gstin) : null,
+        party_state_code: f.party_state_code ? String(f.party_state_code) : null,
+        narration: f.narration ? String(f.narration) : null,
+        org_name: String(f.org_name ?? ''),
+        org_gstin: f.org_gstin ? String(f.org_gstin) : null,
+        org_state_code: f.org_state_code ? String(f.org_state_code) : null,
+        org_pan_no: f.org_pan_no ? String(f.org_pan_no) : null,
+        org_phone: f.org_phone ? String(f.org_phone) : null,
+        org_email: f.org_email ? String(f.org_email) : null,
+        org_address_line1: f.org_address_line1 ? String(f.org_address_line1) : null,
+        org_address_line2: f.org_address_line2 ? String(f.org_address_line2) : null,
+        org_city: f.org_city ? String(f.org_city) : null,
+        org_pincode: f.org_pincode ? String(f.org_pincode) : null,
+        org_bank_name: f.org_bank_name ? String(f.org_bank_name) : null,
+        org_bank_account_no: f.org_bank_account_no ? String(f.org_bank_account_no) : null,
+        org_bank_ifsc: f.org_bank_ifsc ? String(f.org_bank_ifsc) : null,
+        org_upi: f.org_upi ? String(f.org_upi) : null,
+        lines: data.map((r) => {
+          const row = r as Record<string, unknown>
+          return {
+            line_id: row.line_id as string, stock_item_id: row.stock_item_id as string,
+            item_name: row.item_name as string, unit: row.unit as string,
+            hsn: row.hsn ? String(row.hsn) : null, gst_rate: Number(row.gst_rate),
+            qty: Number(row.qty), rate: Number(row.rate), amount: Number(row.amount),
+          }
+        }),
+      }
+    },
+  })
+}
