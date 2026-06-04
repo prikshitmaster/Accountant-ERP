@@ -19,6 +19,9 @@ const ERROR_MAP: Record<string, string> = {
   invalid_weight: 'Each finished good needs a cost weight greater than zero.',
   return_qty_exceeds: 'Return quantity exceeds the original quantity sold.',
   insufficient_stock: 'Not enough stock to process this purchase return.',
+  already_invoiced: 'This order has already been converted to an invoice.',
+  already_billed: 'This order has already been converted to a bill.',
+  invalid_status: 'This action is not available in the current status.',
 }
 
 export function friendlyError(message: string): string {
@@ -150,4 +153,45 @@ export const rpc = {
 
   closePeriod: (orgId: string, lockUpto: string) =>
     callRpc('close_period', { p_org: orgId, p_lock_upto: lockUpto }),
+
+  createSalesOrder: (
+    orgId: string, date: string, party: string, items: unknown[],
+    deliveryDate?: string, narration?: string, discount = 0, freight = 0,
+  ) =>
+    callRpc<{ so_id: string; so_no: string }>('create_sales_order', {
+      p_org: orgId, p_date: date, p_party: party, p_items: items,
+      p_delivery_date: deliveryDate ?? null, p_narration: narration ?? null,
+      p_discount: discount, p_freight: freight,
+    }),
+
+  confirmSalesOrder: (orgId: string, soId: string) =>
+    callRpc<void>('confirm_sales_order', { p_org: orgId, p_so: soId }),
+
+  cancelSalesOrder: (orgId: string, soId: string) =>
+    callRpc<void>('cancel_sales_order', { p_org: orgId, p_so: soId }),
+
+  convertSoToInvoice: (orgId: string, soId: string, paymentMode: string) =>
+    callRpc<{ voucher_no: string }>('convert_so_to_invoice', {
+      p_org: orgId, p_so: soId, p_payment_mode: paymentMode,
+    }),
+
+  createPurchaseOrder: (
+    orgId: string, date: string, party: string, items: unknown[],
+    deliveryDate?: string, narration?: string,
+  ) =>
+    callRpc<{ po_id: string; po_no: string }>('create_purchase_order', {
+      p_org: orgId, p_date: date, p_party: party, p_items: items,
+      p_delivery_date: deliveryDate ?? null, p_narration: narration ?? null,
+    }),
+
+  confirmPurchaseOrder: (orgId: string, poId: string) =>
+    callRpc<void>('confirm_purchase_order', { p_org: orgId, p_po: poId }),
+
+  cancelPurchaseOrder: (orgId: string, poId: string) =>
+    callRpc<void>('cancel_purchase_order', { p_org: orgId, p_po: poId }),
+
+  convertPoToBill: (orgId: string, poId: string, paymentMode: string) =>
+    callRpc<{ voucher_no: string }>('convert_po_to_bill', {
+      p_org: orgId, p_po: poId, p_payment_mode: paymentMode,
+    }),
 }
