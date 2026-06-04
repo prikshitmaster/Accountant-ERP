@@ -186,7 +186,7 @@ create policy "org member" on sales_order_lines for all using (
     where so.id = sales_order_lines.so_id
     and so.org_id in (select org_id from memberships where user_id = auth.uid()))
 );
-grant select, insert on sales_order_lines to authenticated;
+grant select, insert, update, delete on sales_order_lines to authenticated;
 
 -- purchase_orders
 create table if not exists purchase_orders (
@@ -224,7 +224,7 @@ create policy "org member" on purchase_order_lines for all using (
     where po.id = purchase_order_lines.po_id
     and po.org_id in (select org_id from memberships where user_id = auth.uid()))
 );
-grant select, insert on purchase_order_lines to authenticated;
+grant select, insert, update, delete on purchase_order_lines to authenticated;
 
 -- Sequence helpers (defined after the tables they reference)
 create or replace function next_so_no(p_org uuid) returns text
@@ -236,6 +236,9 @@ create or replace function next_po_no(p_org uuid) returns text
 language sql security definer set search_path = public as $$
   select 'PO-' || lpad(((select count(*) from purchase_orders where org_id = p_org) + 1)::text, 5, '0');
 $$;
+
+grant execute on function next_so_no(uuid) to authenticated;
+grant execute on function next_po_no(uuid) to authenticated;
 
 -- v_sales_orders (list view)
 create or replace view v_sales_orders with (security_invoker = on) as
@@ -326,6 +329,7 @@ declare
 begin
   if v_role is null then raise exception 'not_member'; end if;
   if jsonb_array_length(coalesce(p_items,'[]'::jsonb)) = 0 then raise exception 'empty_voucher'; end if;
+  perform pg_advisory_xact_lock(hashtext(p_org::text || '_so'));
   v_so_no := next_so_no(p_org);
   insert into sales_orders (org_id, so_no, date, party_id, delivery_date, narration, discount_amount, freight_amount)
     values (p_org, v_so_no, p_date, p_party, p_delivery_date, p_narration, p_discount, p_freight)
@@ -346,7 +350,7 @@ begin
   if v_role is null then raise exception 'not_member'; end if;
   select status into v_status from sales_orders where id = p_so and org_id = p_org;
   if not found then raise exception 'voucher_not_found'; end if;
-  if v_status <> 'draft' then raise exception 'already_cancelled'; end if;
+  if v_status <> 'draft' then raise exception 'invalid_status'; end if;
   update sales_orders set status = 'confirmed' where id = p_so;
 end; $$;
 grant execute on function confirm_sales_order to authenticated;
@@ -378,7 +382,8 @@ begin
     into v_status, v_party, v_date, v_discount, v_freight, v_narration
     from sales_orders where id = p_so and org_id = p_org;
   if not found then raise exception 'voucher_not_found'; end if;
-  if v_status in ('invoiced','cancelled') then raise exception 'already_cancelled'; end if;
+  if v_status = 'invoiced' then raise exception 'already_invoiced'; end if;
+  if v_status = 'cancelled' then raise exception 'already_cancelled'; end if;
   select jsonb_agg(jsonb_build_object('stock_item_id', sol.stock_item_id, 'qty', sol.qty, 'rate', sol.rate))
     into v_items from sales_order_lines sol where sol.so_id = p_so;
   v_result := sell(p_org, v_date, v_party, v_items, p_payment_mode, v_narration, v_discount, v_freight);
@@ -400,6 +405,7 @@ declare
 begin
   if v_role is null then raise exception 'not_member'; end if;
   if jsonb_array_length(coalesce(p_items,'[]'::jsonb)) = 0 then raise exception 'empty_voucher'; end if;
+  perform pg_advisory_xact_lock(hashtext(p_org::text || '_po'));
   v_po_no := next_po_no(p_org);
   insert into purchase_orders (org_id, po_no, date, party_id, delivery_date, narration)
     values (p_org, v_po_no, p_date, p_party, p_delivery_date, p_narration)
@@ -420,7 +426,7 @@ begin
   if v_role is null then raise exception 'not_member'; end if;
   select status into v_status from purchase_orders where id = p_po and org_id = p_org;
   if not found then raise exception 'voucher_not_found'; end if;
-  if v_status <> 'draft' then raise exception 'already_cancelled'; end if;
+  if v_status <> 'draft' then raise exception 'invalid_status'; end if;
   update purchase_orders set status = 'confirmed' where id = p_po;
 end; $$;
 grant execute on function confirm_purchase_order to authenticated;
@@ -452,7 +458,8 @@ begin
     into v_status, v_party, v_date, v_narration
     from purchase_orders where id = p_po and org_id = p_org;
   if not found then raise exception 'voucher_not_found'; end if;
-  if v_status in ('billed','cancelled') then raise exception 'already_cancelled'; end if;
+  if v_status = 'billed' then raise exception 'already_billed'; end if;
+  if v_status = 'cancelled' then raise exception 'already_cancelled'; end if;
   select jsonb_agg(jsonb_build_object('stock_item_id', pol.stock_item_id, 'qty', pol.qty, 'rate', pol.rate))
     into v_items from purchase_order_lines pol where pol.po_id = p_po;
   v_result := purchase(p_org, v_date, v_party, v_items, p_payment_mode, v_narration);
