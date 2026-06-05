@@ -228,6 +228,43 @@ export function useDebitNotes(orgId: string | null) {
   })
 }
 
+export type PaymentRow = {
+  voucher_id: string; voucher_no: string; date: string
+  party_name: string | null; mode: string; amount: number; narration: string | null
+}
+
+export function usePaymentsReceived(orgId: string | null) {
+  return useQuery({
+    queryKey: ['payments_received', orgId],
+    enabled: !!orgId,
+    queryFn: async (): Promise<PaymentRow[]> => {
+      const { data, error } = await supabase
+        .from('v_payments_received')
+        .select('voucher_id, voucher_no, date, party_name, mode, amount, narration')
+        .eq('org_id', orgId)
+        .order('date', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as PaymentRow[]
+    },
+  })
+}
+
+export function usePaymentsMade(orgId: string | null) {
+  return useQuery({
+    queryKey: ['payments_made', orgId],
+    enabled: !!orgId,
+    queryFn: async (): Promise<PaymentRow[]> => {
+      const { data, error } = await supabase
+        .from('v_payments_made')
+        .select('voucher_id, voucher_no, date, party_name, mode, amount, narration')
+        .eq('org_id', orgId)
+        .order('date', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as PaymentRow[]
+    },
+  })
+}
+
 export type AgedRow = {
   party_name: string; invoice_no?: string; bill_no?: string; date: string
   outstanding: number; age_days: number

@@ -12,6 +12,8 @@ import { PurchasesPage } from '@/features/purchases/PurchasesPage'
 import { PurchaseDetailPage } from '@/features/purchases/PurchaseDetailPage'
 import { PurchaseOrdersPage } from '@/features/purchases/PurchaseOrdersPage'
 import { PurchaseOrderDetailPage } from '@/features/purchases/PurchaseOrderDetailPage'
+import { PaymentsMadePage } from '@/features/purchases/PaymentsMadePage'
+import { PaymentsReceivedPage } from '@/features/sales/PaymentsReceivedPage'
 import { PartiesPage } from '@/features/masters/PartiesPage'
 import { ItemsPage } from '@/features/masters/ItemsPage'
 import { StockPage } from '@/features/stock/StockPage'
@@ -44,7 +46,10 @@ export default function App() {
         <Route path="/purchases/:id" element={<PurchaseDetailPage />} />
         <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
         <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
+        <Route path="/payments-made" element={<PaymentsMadePage />} />
+        <Route path="/payments-received" element={<PaymentsReceivedPage />} />
         <Route path="/parties" element={<PartiesPage />} />
+        <Route path="/parties/:id" element={<PartiesPage />} />
         <Route path="/items" element={<ItemsPage />} />
         <Route path="/stock" element={<StockPage />} />
         <Route path="/manufacture" element={<ManufacturePage />} />
