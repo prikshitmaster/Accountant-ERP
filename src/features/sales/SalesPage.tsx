@@ -9,7 +9,6 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Field, Select, Input } from '@/components/ui/Input'
 import { ItemTable, emptyLine, lineError, type Line } from '@/components/ItemTable'
-import { PageHeader } from '@/components/ui/PageHeader'
 import { InvoiceDrawer } from './InvoiceDrawer'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -111,17 +110,40 @@ export function SalesPage() {
 
   const partyName = (id: string) => customers.find((p) => p.id === id)?.name ?? '—'
 
+  const totalBilled    = invoices.reduce((s, i) => s + i.total, 0)
+  const totalCollected = invoices.reduce((s, i) => s + (i.total - i.outstanding), 0)
+  const totalDue       = invoices.reduce((s, i) => s + i.outstanding, 0)
+
   return (
     <div className="space-y-4">
-      {/* Page header */}
-      <div className="flex items-start justify-between gap-3">
-        <PageHeader title="Sales" description="Record what you sell and keep track of who still owes you." />
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="shrink-0 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          + {listTab === 'invoices' ? 'New Sale' : 'New Credit Note'}
-        </button>
+      {/* Page header — green identity */}
+      <div className="rounded-xl bg-emerald-600 px-5 py-4 text-white">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-widest text-emerald-200">Sales</p>
+            <h1 className="mt-0.5 text-2xl font-bold">Invoices & Returns</h1>
+          </div>
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="shrink-0 rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25 border border-white/20"
+          >
+            + {listTab === 'invoices' ? 'New Sale' : 'New Credit Note'}
+          </button>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="rounded-lg bg-white/10 px-3 py-2.5">
+            <p className="text-xs text-emerald-200">Total Billed</p>
+            <p className="num mt-0.5 text-lg font-semibold">{formatINR(totalBilled, false)}</p>
+          </div>
+          <div className="rounded-lg bg-white/10 px-3 py-2.5">
+            <p className="text-xs text-emerald-200">Collected</p>
+            <p className="num mt-0.5 text-lg font-semibold">{formatINR(totalCollected, false)}</p>
+          </div>
+          <div className="rounded-lg bg-white/10 px-3 py-2.5">
+            <p className="text-xs text-emerald-200">Outstanding</p>
+            <p className={`num mt-0.5 text-lg font-semibold ${totalDue > 0 ? 'text-yellow-300' : 'text-white'}`}>{formatINR(totalDue, false)}</p>
+          </div>
+        </div>
       </div>
 
       {/* Collapsible form */}
@@ -219,7 +241,7 @@ export function SalesPage() {
           ]).map((t) => (
             <button key={t.id} type="button" onClick={() => switchTab(t.id)}
               className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                listTab === t.id ? 'border-brand-600 text-brand-600' : 'border-transparent text-muted hover:text-ink'
+                listTab === t.id ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-muted hover:text-ink'
               }`}>
               {t.label}
               {t.badge > 0 && (

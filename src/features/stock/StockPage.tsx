@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/Card'
 import { AlertTriangle, CheckCircle2, XCircle, Package, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const LEDGER_PAGE = 20
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const shortDate = (iso: string) => { const [,m,d] = iso.split('T')[0].split('-'); return `${d} ${MONTHS[+m-1]}` }
 
 const TYPE_META: Record<string, { label: string; cls: string }> = {
   PURCHASE:     { label: 'Purchase',    cls: 'bg-blue-100 text-blue-700' },
@@ -199,33 +201,29 @@ export function StockPage() {
                             <th>Type</th>
                             <th className="r">In / Out</th>
                             <th className="r">Rate</th>
-                            <th className="r">Value</th>
                             <th className="r">Bal Qty</th>
                             <th className="r">Bal Value</th>
                           </tr>
                         </thead>
                         <tbody>
                           {ledgerLoading && (
-                            <tr><td colSpan={8} className="py-8 text-center text-sm text-muted">Loading…</td></tr>
+                            <tr><td colSpan={7} className="py-8 text-center text-sm text-muted">Loading…</td></tr>
                           )}
                           {!ledgerLoading && paged.map((r, i) => (
                             <tr key={ledgerPage * LEDGER_PAGE + i}>
-                              <td className="num">{formatDate(r.date)}</td>
+                              <td className="num whitespace-nowrap">{shortDate(r.date)}</td>
                               <td className="num">{r.voucher_no ?? r.reason ?? '—'}</td>
                               <td><TypeBadge code={r.type_code} /></td>
                               <td className={`r num font-semibold ${r.qty_change < 0 ? 'text-neg' : 'text-pos'}`}>
                                 {r.qty_change > 0 ? '+' : ''}{Number(r.qty_change).toLocaleString('en-IN')}
                               </td>
                               <td className="r num text-muted">{formatINR(r.unit_cost, false)}</td>
-                              <td className={`r num ${r.value_change < 0 ? 'text-neg' : 'text-muted'}`}>
-                                {r.value_change > 0 ? '+' : ''}{formatINR(Math.abs(r.value_change), false)}
-                              </td>
                               <td className="r num font-semibold">{Number(r.balance_qty).toLocaleString('en-IN')}</td>
                               <td className="r num font-semibold">{formatINR(r.balance_value, false)}</td>
                             </tr>
                           ))}
                           {!ledgerLoading && !ledger.length && (
-                            <tr><td colSpan={8} className="py-10 text-center text-sm text-muted">No movements recorded yet.</td></tr>
+                            <tr><td colSpan={7} className="py-10 text-center text-sm text-muted">No movements recorded yet.</td></tr>
                           )}
                         </tbody>
                         {last && (
@@ -235,7 +233,7 @@ export function StockPage() {
                               <td className={`r num ${last.balance_qty < 0 ? 'text-neg' : ''}`}>
                                 {Number(last.balance_qty).toLocaleString('en-IN')} {selected.unit}
                               </td>
-                              <td colSpan={2} />
+                              <td />
                               <td className="r num">{Number(last.balance_qty).toLocaleString('en-IN')}</td>
                               <td className="r num">{formatINR(last.balance_value, false)}</td>
                             </tr>
