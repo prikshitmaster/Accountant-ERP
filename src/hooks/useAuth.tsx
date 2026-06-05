@@ -50,15 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    async function init() {
-      const { data } = await supabase.auth.getSession()
-      const s = data.session
+    // Initial load: getSession() is fast and reliable.
+    // Keep loading=true until memberships are also fetched so the app
+    // never briefly renders with session+empty memberships (CreateOrg flash).
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s)
-      if (s) await refreshMemberships()
-      setLoading(false)
-    }
-    init()
+      if (s) refreshMemberships().finally(() => setLoading(false))
+      else setLoading(false)
+    })
 
+    // Subsequent sign-in / sign-out / token-refresh events only.
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s)
       if (s) refreshMemberships()
