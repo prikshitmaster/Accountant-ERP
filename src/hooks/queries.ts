@@ -99,6 +99,33 @@ export function useParties(orgId: string | null, kind?: 'customer' | 'supplier')
   })
 }
 
+export type PartyFull = {
+  id: string; org_id: string; name: string; kind: 'customer' | 'supplier' | 'both'
+  phone: string | null; gstin: string | null; state_code: string | null
+  alias: string | null; group_name: string | null; area: string | null
+  city: string | null; pincode: string | null; billing_address: string | null
+  shipping_address: string | null; email: string | null; contact_person: string | null
+  pan: string | null; aadhaar: string | null; udyam_no: string | null
+  msme_activity: string | null; credit_limit: number; credit_days: number
+  created_at: string
+}
+export function usePartyFull(orgId: string | null, partyId: string | null) {
+  return useQuery({
+    queryKey: ['party_full', orgId, partyId],
+    enabled: !!orgId && !!partyId,
+    queryFn: async (): Promise<PartyFull | null> => {
+      const { data, error } = await supabase
+        .from('parties')
+        .select('id, org_id, name, kind, phone, gstin, state_code, alias, group_name, area, city, pincode, billing_address, shipping_address, email, contact_person, pan, aadhaar, udyam_no, msme_activity, credit_limit, credit_days, created_at')
+        .eq('org_id', orgId)
+        .eq('id', partyId)
+        .maybeSingle()
+      if (error) throw error
+      return data as PartyFull | null
+    },
+  })
+}
+
 export type Item = {
   id: string; name: string; item_type: number; unit: string
   qty_on_hand: number; avg_cost: number; value_on_hand: number
@@ -449,15 +476,17 @@ export type MonthlyPL = {
   expense: number // paise
 }
 
-export function useMonthlyPL(orgId: string | null) {
+export function useMonthlyPL(orgId: string | null, from?: string, to?: string) {
   return useQuery({
-    queryKey: ['monthly_pl', orgId],
+    queryKey: ['monthly_pl', orgId, from, to],
     enabled: !!orgId,
     queryFn: async (): Promise<MonthlyPL[]> => {
       const { data, error } = await supabase
         .from('v_monthly_pl')
         .select('month, income, expense')
-        .eq('org_id', orgId)
+        .eq('org_id', orgId!)
+        .gte('month', from ?? '1970-01-01')
+        .lte('month', to   ?? '2099-12-31')
         .order('month', { ascending: true })
         .limit(12)
       if (error) throw error
@@ -476,15 +505,17 @@ export type MonthlyCashFlow = {
   outgoing: number  // paise — credits to cash/bank
 }
 
-export function useMonthlyCashFlow(orgId: string | null) {
+export function useMonthlyCashFlow(orgId: string | null, from?: string, to?: string) {
   return useQuery({
-    queryKey: ['monthly_cashflow', orgId],
+    queryKey: ['monthly_cashflow', orgId, from, to],
     enabled: !!orgId,
     queryFn: async (): Promise<MonthlyCashFlow[]> => {
       const { data, error } = await supabase
         .from('v_monthly_cashflow')
         .select('month, incoming, outgoing')
-        .eq('org_id', orgId)
+        .eq('org_id', orgId!)
+        .gte('month', from ?? '1970-01-01')
+        .lte('month', to   ?? '2099-12-31')
         .order('month', { ascending: true })
         .limit(12)
       if (error) throw error
@@ -493,6 +524,41 @@ export function useMonthlyCashFlow(orgId: string | null) {
         incoming: Number(r.incoming),
         outgoing: Number(r.outgoing),
       }))
+    },
+  })
+}
+
+// ---- Party Breakdown (customer/supplier sales by period) ----
+export type PartyBreakdownRow = {
+  party_name: string
+  sales: number
+  outstanding: number
+  invoices: number
+}
+
+export function useCustomerBreakdown(orgId: string | null, from: string, to: string) {
+  return useQuery({
+    queryKey: ['customer_breakdown', orgId, from, to],
+    enabled: !!orgId,
+    queryFn: async (): Promise<PartyBreakdownRow[]> => {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('total, outstanding, party:parties(name)')
+        .eq('org_id', orgId!)
+        .gte('date', from)
+        .lte('date', to)
+        .not('party_id', 'is', null)
+      if (error) throw error
+      const map = new Map<string, PartyBreakdownRow>()
+      for (const r of data ?? []) {
+        const name = (r.party as { name: string } | null)?.name ?? 'Unknown'
+        const e = map.get(name) ?? { party_name: name, sales: 0, outstanding: 0, invoices: 0 }
+        e.sales       += Number(r.total)
+        e.outstanding += Number(r.outstanding)
+        e.invoices    += 1
+        map.set(name, e)
+      }
+      return Array.from(map.values()).sort((a, b) => b.sales - a.sales)
     },
   })
 }

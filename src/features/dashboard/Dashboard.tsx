@@ -1,14 +1,57 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { TrendingUp, ShoppingCart, Wallet, Landmark, Boxes, ReceiptText, Inbox, AlertTriangle } from 'lucide-react'
+import { TrendingUp, ShoppingCart, Wallet, Landmark, Boxes, ReceiptText, AlertTriangle } from 'lucide-react'
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useAuth } from '@/hooks/useAuth'
-import { useDashboard, useDayBook, useItems, useGstSummary, useAged, useMonthlyPL, useMonthlyCashFlow, useOrgSettings } from '@/hooks/queries'
-import { formatINR, formatDate } from '@/lib/money'
+import { useDashboard, useItems, useGstSummary, useAged, useMonthlyPL, useMonthlyCashFlow, useOrgSettings, useCustomerBreakdown } from '@/hooks/queries'
+import { formatINR } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
-import { EmptyState } from '@/components/ui/EmptyState'
 
 const today = () => new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+
+function currentFY(): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  return now.getMonth() >= 3 ? `${y}-${String(y + 1).slice(2)}` : `${y - 1}-${String(y).slice(2)}`
+}
+
+function fyRange(fy: string): { from: string; to: string; label: string } {
+  const [startY] = fy.split('-').map(Number)
+  return {
+    from:  `${startY}-04-01`,
+    to:    `${startY + 1}-03-31`,
+    label: `FY ${startY}-${String(startY + 1).slice(2)}`,
+  }
+}
+
+function buildFYOptions(): string[] {
+  const now = new Date()
+  const y = now.getFullYear()
+  const curStartY = now.getMonth() >= 3 ? y : y - 1
+  return [curStartY - 2, curStartY - 1, curStartY].map(
+    (s) => `${s}-${String(s + 1).slice(2)}`
+  )
+}
+
+type MonthOption = { key: string; label: string; from: string; to: string }
+
+function fyMonths(fy: string): MonthOption[] {
+  const [startY] = fy.split('-').map(Number)
+  const slots = [
+    [3, startY], [4, startY], [5, startY], [6, startY], [7, startY], [8, startY],
+    [9, startY], [10, startY], [11, startY], [0, startY + 1], [1, startY + 1], [2, startY + 1],
+  ] as [number, number][]
+  return slots.map(([m, y]) => {
+    const lastDay = new Date(y, m + 1, 0).getDate()
+    const mm = String(m + 1).padStart(2, '0')
+    return {
+      key:   `${y}-${mm}`,
+      label: new Date(y, m, 1).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
+      from:  `${y}-${mm}-01`,
+      to:    `${y}-${mm}-${lastDay}`,
+    }
+  })
+}
 
 function ProgressBar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0
@@ -21,15 +64,28 @@ function ProgressBar({ value, max }: { value: number; max: number }) {
 
 export function Dashboard() {
   const { currentOrgId } = useAuth()
+  const [fy, setFy] = useState(currentFY)
+  const [monthKey, setMonthKey] = useState<string | null>(null)
+  const fyOpts   = buildFYOptions()
+  const months   = fyMonths(fy)
+  const fyFull   = fyRange(fy)
+  const selMonth = months.find((m) => m.key === monthKey) ?? null
+
+  const effectiveFrom  = selMonth ? selMonth.from  : fyFull.from
+  const effectiveTo    = selMonth ? selMonth.to    : fyFull.to
+  const periodLabel    = selMonth ? selMonth.label : fyFull.label
+
+  useEffect(() => { setMonthKey(null) }, [fy])
+
   const { data, isLoading } = useDashboard(currentOrgId)
-  const { data: rows = [] } = useDayBook(currentOrgId, 8)
   const { data: items = [] } = useItems(currentOrgId)
   const { data: gst } = useGstSummary(currentOrgId)
   const { data: recAged = [] } = useAged(currentOrgId, 'receivables')
   const { data: payAged = [] } = useAged(currentOrgId, 'payables')
-  const { data: monthly = [] } = useMonthlyPL(currentOrgId)
-  const { data: cashflow = [] } = useMonthlyCashFlow(currentOrgId)
+  const { data: monthly = [] } = useMonthlyPL(currentOrgId, effectiveFrom, effectiveTo)
+  const { data: cashflow = [] } = useMonthlyCashFlow(currentOrgId, effectiveFrom, effectiveTo)
   const { data: settings } = useOrgSettings(currentOrgId)
+  const { data: custBreakdown = [] } = useCustomerBreakdown(currentOrgId, effectiveFrom, effectiveTo)
 
   const stockValue = items.reduce((s, i) => s + i.value_on_hand, 0)
   const lowStock = items.filter((i) => i.min_level > 0 && i.qty_on_hand <= i.min_level)
@@ -86,6 +142,57 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* Filter bar */}
+      <div className="space-y-2">
+        {/* FY row */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs text-muted w-16 shrink-0">Fiscal Year</span>
+          {fyOpts.map((f) => {
+            const { label } = fyRange(f)
+            return (
+              <button
+                key={f}
+                onClick={() => setFy(f)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  f === fy
+                    ? 'bg-brand-600 text-white'
+                    : 'border border-line bg-white text-muted hover:text-ink'
+                }`}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+        {/* Month row */}
+        <div className="flex items-center gap-1 flex-nowrap overflow-x-auto pb-1">
+          <span className="text-xs text-muted w-16 shrink-0">Month</span>
+          <button
+            onClick={() => setMonthKey(null)}
+            className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              !monthKey
+                ? 'bg-brand-600 text-white'
+                : 'border border-line bg-white text-muted hover:text-ink'
+            }`}
+          >
+            All
+          </button>
+          {months.map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setMonthKey(m.key === monthKey ? null : m.key)}
+              className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                m.key === monthKey
+                  ? 'bg-brand-600 text-white'
+                  : 'border border-line bg-white text-muted hover:text-ink'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Receivables + Payables */}
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Receivables */}
@@ -135,7 +242,7 @@ export function Dashboard() {
       <Card>
         <div className="flex items-start justify-between mb-4">
           <p className="font-semibold text-ink">Cash Flow</p>
-          <span className="text-xs text-muted">This Fiscal Year</span>
+          <span className="text-xs text-muted">{periodLabel}</span>
         </div>
         <div className="flex gap-4">
           <div className="flex-1 min-w-0">
@@ -212,7 +319,7 @@ export function Dashboard() {
               </span>
             </div>
           </div>
-          <span className="text-xs text-muted">This Fiscal Year</span>
+          <span className="text-xs text-muted">{periodLabel}</span>
         </div>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={200}>
@@ -229,6 +336,48 @@ export function Dashboard() {
           <div className="flex h-[200px] items-center justify-center text-sm text-muted">No data yet — record a sale or expense to see your chart.</div>
         )}
       </Card>
+
+      {/* Customer Breakdown */}
+      {custBreakdown.length > 0 && (
+        <Card>
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-semibold text-ink">Sales by Customer</p>
+            <span className="text-xs text-muted">{periodLabel}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line text-xs text-muted">
+                  <th className="pb-2 text-left font-medium">Customer</th>
+                  <th className="pb-2 text-right font-medium">Sales</th>
+                  <th className="pb-2 text-right font-medium">Outstanding</th>
+                  <th className="pb-2 text-right font-medium">Invoices</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {custBreakdown.map((row) => (
+                  <tr key={row.party_name} className="hover:bg-canvas transition-colors">
+                    <td className="py-2 font-medium text-ink">{row.party_name}</td>
+                    <td className="py-2 text-right num">{formatINR(row.sales, false)}</td>
+                    <td className={`py-2 text-right num ${row.outstanding > 0 ? 'text-warn' : 'text-muted'}`}>
+                      {row.outstanding > 0 ? formatINR(row.outstanding, false) : '—'}
+                    </td>
+                    <td className="py-2 text-right text-muted">{row.invoices}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-line text-xs font-semibold">
+                  <td className="pt-2">Total</td>
+                  <td className="pt-2 text-right num">{formatINR(custBreakdown.reduce((s, r) => s + r.sales, 0), false)}</td>
+                  <td className="pt-2 text-right num text-warn">{formatINR(custBreakdown.reduce((s, r) => s + r.outstanding, 0), false)}</td>
+                  <td className="pt-2 text-right text-muted">{custBreakdown.reduce((s, r) => s + r.invoices, 0)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Stat Cards Row */}
       {!isLoading && (
@@ -278,37 +427,6 @@ export function Dashboard() {
         ) : (
           <Card className="flex items-center justify-center text-sm text-muted">All stock levels are healthy.</Card>
         )}
-      </div>
-
-      {/* Recent Activity */}
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-ink">Recent Activity</h2>
-          <Link to="/reports" className="text-sm font-medium text-brand-600">View all</Link>
-        </div>
-        <Card className="p-0">
-          {rows.length ? (
-            <table className="tbl">
-              <thead><tr><th>Transaction</th><th className="r">Amount</th></tr></thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.voucher_id}>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-ink text-sm">{r.type_name}{r.party_name ? ` · ${r.party_name}` : ''}</p>
-                        {r.status === 'cancelled' && <Badge tone="muted">Cancelled</Badge>}
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted">{formatDate(r.date)} · <span className="num">{r.voucher_no}</span></p>
-                    </td>
-                    <td className={`r num font-semibold text-sm ${r.status === 'cancelled' ? 'text-muted line-through' : 'text-ink'}`}>{formatINR(r.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <EmptyState icon={Inbox} title="Nothing here yet" description="Your sales, purchases, and payments will show up here." />
-          )}
-        </Card>
       </div>
     </div>
   )
