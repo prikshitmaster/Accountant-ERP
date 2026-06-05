@@ -97,33 +97,36 @@ export function PurchasesPage() {
 
   return (
     <div className="space-y-4">
-      {/* Page header — orange identity */}
-      <div className="rounded-xl bg-orange-500 px-5 py-4 text-white">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-widest text-orange-100">Purchases</p>
-            <h1 className="mt-0.5 text-2xl font-bold">Bills & Returns</h1>
-          </div>
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="shrink-0 rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25 border border-white/20"
-          >
-            + {listTab === 'bills' ? 'New Purchase' : 'New Debit Note'}
-          </button>
+      {/* Page header */}
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-heading">Purchases</h1>
+          <p className="text-sm text-muted">Bills &amp; debit notes</p>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          <div className="rounded-lg bg-white/10 px-3 py-2.5">
-            <p className="text-xs text-orange-100">Total Purchased</p>
-            <p className="num mt-0.5 text-lg font-semibold">{formatINR(totalBilled, false)}</p>
-          </div>
-          <div className="rounded-lg bg-white/10 px-3 py-2.5">
-            <p className="text-xs text-orange-100">Paid</p>
-            <p className="num mt-0.5 text-lg font-semibold">{formatINR(totalPaid, false)}</p>
-          </div>
-          <div className="rounded-lg bg-white/10 px-3 py-2.5">
-            <p className="text-xs text-orange-100">Outstanding</p>
-            <p className={`num mt-0.5 text-lg font-semibold ${totalDue > 0 ? 'text-yellow-300' : 'text-white'}`}>{formatINR(totalDue, false)}</p>
-          </div>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="shrink-0 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+        >
+          + {listTab === 'bills' ? 'New Purchase' : 'New Debit Note'}
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-xl border border-line bg-white px-4 py-3">
+          <p className="text-xs text-muted">Total Purchased</p>
+          <p className="num mt-1 text-xl font-semibold text-heading">{formatINR(totalBilled, false)}</p>
+          <p className="mt-0.5 text-xs text-muted">{bills.length} bill{bills.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div className="rounded-xl border border-line bg-white px-4 py-3">
+          <p className="text-xs text-muted">Paid</p>
+          <p className="num mt-1 text-xl font-semibold text-emerald-600">{formatINR(totalPaid, false)}</p>
+          <p className="mt-0.5 text-xs text-muted">{totalBilled > 0 ? Math.round(totalPaid * 100 / totalBilled) : 0}% of purchased</p>
+        </div>
+        <div className="rounded-xl border border-line bg-white px-4 py-3">
+          <p className="text-xs text-muted">Outstanding</p>
+          <p className={`num mt-1 text-xl font-semibold ${totalDue > 0 ? 'text-orange-600' : 'text-emerald-600'}`}>{formatINR(totalDue, false)}</p>
+          <p className="mt-0.5 text-xs text-muted">{bills.filter(b => b.outstanding > 0).length} unpaid</p>
         </div>
       </div>
 
@@ -203,7 +206,7 @@ export function PurchasesPage() {
           ]).map((t) => (
             <button key={t.id} type="button" onClick={() => switchTab(t.id)}
               className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                listTab === t.id ? 'border-orange-500 text-orange-600' : 'border-transparent text-muted hover:text-ink'
+                listTab === t.id ? 'border-brand-600 text-brand-600' : 'border-transparent text-muted hover:text-ink'
               }`}>
               {t.label}
               {t.badge > 0 && (
