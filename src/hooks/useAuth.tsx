@@ -50,25 +50,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      // If no session, stop loading now. If session exists, wait for
-      // memberships to load (handled in the [session] effect below).
-      if (!data.session) setLoading(false)
-    })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
-    return () => sub.subscription.unsubscribe()
-  }, [])
-
-  useEffect(() => {
-    if (session) {
-      refreshMemberships().finally(() => setLoading(false))
-    } else {
-      setMemberships([])
+    async function init() {
+      const { data } = await supabase.auth.getSession()
+      const s = data.session
+      setSession(s)
+      if (s) await refreshMemberships()
       setLoading(false)
     }
+    init()
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s)
+      if (s) refreshMemberships()
+      else setMemberships([])
+    })
+    return () => sub.subscription.unsubscribe()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session])
+  }, [])
 
   const role = memberships.find((m) => m.org_id === currentOrgId)?.role ?? null
 
