@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,13 +10,13 @@ import { Button } from '@/components/ui/Button'
 import { Field, Select, Input } from '@/components/ui/Input'
 import { ItemLines, emptyLine, lineError, type Line } from '@/components/ItemLines'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { BillDrawer } from './BillDrawer'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const PAGE_SIZE = 15
 
 export function PurchasesPage() {
   const { currentOrgId } = useAuth()
-  const navigate = useNavigate()
   const qc = useQueryClient()
   const { data: suppliers = [] } = useParties(currentOrgId, 'supplier')
   const { data: items = [] }     = useItems(currentOrgId)
@@ -29,6 +28,7 @@ export function PurchasesPage() {
   const [showForm, setShowForm] = useState(false)
   const [billPage, setBillPage] = useState(0)
   const [dnPage,   setDnPage]   = useState(0)
+  const [drawerBillId, setDrawerBillId] = useState<string | null>(null)
 
   function switchTab(t: 'bills' | 'debit_notes') {
     setListTab(t); setShowForm(false); setBillPage(0); setDnPage(0)
@@ -201,7 +201,7 @@ export function PurchasesPage() {
                   <thead><tr><th>No.</th><th>Supplier</th><th>Date</th><th className="r">Total</th><th className="r">Due</th></tr></thead>
                   <tbody>
                     {paged.map((b) => (
-                      <tr key={b.id} className="cursor-pointer" onClick={() => navigate('/purchases/' + b.id)}>
+                      <tr key={b.id} className="cursor-pointer" onClick={() => setDrawerBillId(b.id)}>
                         <td className="num">{b.bill_no}</td>
                         <td>{partyName(b.party_id)}</td>
                         <td className="num">{formatDate(b.date)}</td>
@@ -258,6 +258,8 @@ export function PurchasesPage() {
           })()}
         </div>
       </Card>
+
+      <BillDrawer billId={drawerBillId} onClose={() => setDrawerBillId(null)} />
     </div>
   )
 }

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Field, Select, Input } from '@/components/ui/Input'
 import { ItemTable, emptyLine, lineError, type Line } from '@/components/ItemTable'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { InvoiceDrawer } from './InvoiceDrawer'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const PAGE_SIZE = 15
@@ -18,7 +18,6 @@ const PAGE_SIZE = 15
 export function SalesPage() {
   const { currentOrgId } = useAuth()
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const { data: customers = [] }  = useParties(currentOrgId, 'customer')
   const { data: items = [] }      = useItems(currentOrgId)
   const { data: invoices = [] }   = useInvoices(currentOrgId)
@@ -29,6 +28,7 @@ export function SalesPage() {
   const [showForm,  setShowForm]  = useState(false)
   const [invPage,   setInvPage]   = useState(0)
   const [cnPage,    setCnPage]    = useState(0)
+  const [drawerInvId, setDrawerInvId] = useState<string | null>(null)
 
   function switchTab(t: 'invoices' | 'credit_notes') {
     setListTab(t); setShowForm(false); setInvPage(0); setCnPage(0)
@@ -239,7 +239,7 @@ export function SalesPage() {
                   <thead><tr><th>No.</th><th>Customer</th><th>Date</th><th className="r">Total</th><th className="r">Due</th></tr></thead>
                   <tbody>
                     {paged.map((inv) => (
-                      <tr key={inv.id} className="cursor-pointer" onClick={() => navigate(`/sales/${inv.id}`)}>
+                      <tr key={inv.id} className="cursor-pointer" onClick={() => setDrawerInvId(inv.id)}>
                         <td className="num">{inv.invoice_no}</td>
                         <td>{partyName(inv.party_id)}</td>
                         <td className="num">{formatDate(inv.date)}</td>
@@ -296,6 +296,8 @@ export function SalesPage() {
           })()}
         </div>
       </Card>
+
+      <InvoiceDrawer invoiceId={drawerInvId} onClose={() => setDrawerInvId(null)} />
     </div>
   )
 }
