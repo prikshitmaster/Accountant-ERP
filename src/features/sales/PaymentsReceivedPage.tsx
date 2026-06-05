@@ -4,6 +4,7 @@ import { usePaymentsReceived } from '@/hooks/queries'
 import { formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { ArrowDownLeft } from 'lucide-react'
+import { PaymentDrawer } from '@/features/money/PaymentDrawer'
 
 const PAGE_SIZE = 20
 
@@ -12,6 +13,7 @@ export function PaymentsReceivedPage() {
   const { data: rows = [], isLoading } = usePaymentsReceived(currentOrgId)
   const [page, setPage] = useState(0)
   const [modeFilter, setModeFilter] = useState<'All' | 'Cash' | 'Bank'>('All')
+  const [drawerVoucherId, setDrawerVoucherId] = useState<string | null>(null)
 
   const filtered = modeFilter === 'All' ? rows : rows.filter(r => r.mode === modeFilter)
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1
@@ -78,7 +80,7 @@ export function PaymentsReceivedPage() {
             <tbody>
               {isLoading && <tr><td colSpan={6} className="py-10 text-center text-muted">Loading…</td></tr>}
               {!isLoading && paged.map((r) => (
-                <tr key={r.voucher_id}>
+                <tr key={r.voucher_id} className="cursor-pointer hover:bg-canvas" onClick={() => setDrawerVoucherId(r.voucher_id)}>
                   <td className="num text-muted">{r.voucher_no}</td>
                   <td className="font-medium">{r.party_name ?? <span className="text-muted">—</span>}</td>
                   <td className="num">{formatDate(r.date)}</td>
@@ -112,6 +114,8 @@ export function PaymentsReceivedPage() {
           </div>
         )}
       </Card>
+
+      <PaymentDrawer voucherId={drawerVoucherId} type="received" onClose={() => setDrawerVoucherId(null)} />
     </div>
   )
 }
