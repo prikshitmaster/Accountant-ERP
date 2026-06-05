@@ -35,7 +35,7 @@ export function MoneyPage() {
   ]
 
   const invalidate = () =>
-    ['dashboard', 'daybook', 'invoices', 'bills', 'parties', 'trial_balance', 'gst'].forEach((k) =>
+    ['dashboard', 'daybook', 'invoices', 'bills', 'parties', 'trial_balance', 'gst', 'payments_received', 'payments_made'].forEach((k) =>
       qc.invalidateQueries({ queryKey: [k] }))
 
   return (
