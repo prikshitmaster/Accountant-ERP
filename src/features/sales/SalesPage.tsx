@@ -8,7 +8,7 @@ import { rupeesToPaise, formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Field, Select, Input } from '@/components/ui/Input'
-import { ItemTable, emptyLine, type Line } from '@/components/ItemTable'
+import { ItemTable, emptyLine, lineError, type Line } from '@/components/ItemTable'
 import { PageHeader } from '@/components/ui/PageHeader'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -33,7 +33,10 @@ export function SalesPage() {
   const [msg, setMsg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const PAGE_SIZE = 10
   const [listTab, setListTab] = useState<'invoices' | 'credit_notes'>('invoices')
+  const [invPage, setInvPage] = useState(0)
+  const [cnPage,  setCnPage]  = useState(0)
   const { data: creditNotes = [] } = useCreditNotes(currentOrgId)
   const [cnDate, setCnDate] = useState(today())
   const [cnParty, setCnParty] = useState('')
@@ -74,6 +77,8 @@ export function SalesPage() {
       .filter((l) => l.stock_item_id && Number(l.qty) > 0)
       .map((l) => ({ stock_item_id: l.stock_item_id, qty: Number(l.qty), rate: rupeesToPaise(l.rate) }))
     if (!payload.length) { setError('Add at least one item.'); return }
+    const badLine = lines.find((l) => lineError(l))
+    if (badLine) { setError(lineError(badLine)!); return }
     setBusy(true); setError(null); setMsg(null)
     try {
       const res = await rpc.sell(currentOrgId, date, mode === 'credit' ? party : null, payload, mode, narration, discountPaise, freightPaise)
@@ -229,7 +234,7 @@ export function SalesPage() {
             { id: 'invoices' as const, label: 'Invoices' },
             { id: 'credit_notes' as const, label: 'Credit Notes' },
           ]).map((t) => (
-            <button key={t.id} type="button" onClick={() => setListTab(t.id)}
+            <button key={t.id} type="button" onClick={() => { setListTab(t.id); setInvPage(0); setCnPage(0) }}
               className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 listTab === t.id
                   ? 'border-brand-600 text-brand-600'
@@ -245,44 +250,78 @@ export function SalesPage() {
           ))}
         </div>
         <div className="overflow-x-auto">
-          {listTab === 'invoices' ? (
-            <table className="tbl">
-              <thead><tr><th>No.</th><th>Customer</th><th>Date</th><th className="r">Total</th><th className="r">Due</th></tr></thead>
-              <tbody>
-                {invoices.map((inv) => (
-                  <tr key={inv.id} className="cursor-pointer" onClick={() => navigate(`/sales/${inv.id}`)}>
-                    <td className="num">{inv.invoice_no}</td>
-                    <td>{partyName(inv.party_id)}</td>
-                    <td className="num">{formatDate(inv.date)}</td>
-                    <td className="r num bold">{formatINR(inv.total, false)}</td>
-                    <td className={`r num ${inv.outstanding > 0 ? 'text-warn' : 'text-pos'}`}>
-                      {inv.outstanding > 0 ? formatINR(inv.outstanding, false) : 'Paid'}
-                    </td>
-                  </tr>
-                ))}
-                {!invoices.length && (
-                  <tr><td colSpan={5} className="py-6 text-center text-muted">No invoices yet.</td></tr>
+          {listTab === 'invoices' ? (() => {
+            const totalPages = Math.ceil(invoices.length / PAGE_SIZE) || 1
+            const paged = invoices.slice(invPage * PAGE_SIZE, (invPage + 1) * PAGE_SIZE)
+            return (
+              <>
+                <table className="tbl">
+                  <thead><tr><th>No.</th><th>Customer</th><th>Date</th><th className="r">Total</th><th className="r">Due</th></tr></thead>
+                  <tbody>
+                    {paged.map((inv) => (
+                      <tr key={inv.id} className="cursor-pointer" onClick={() => navigate(`/sales/${inv.id}`)}>
+                        <td className="num">{inv.invoice_no}</td>
+                        <td>{partyName(inv.party_id)}</td>
+                        <td className="num">{formatDate(inv.date)}</td>
+                        <td className="r num bold">{formatINR(inv.total, false)}</td>
+                        <td className={`r num ${inv.outstanding > 0 ? 'text-warn' : 'text-pos'}`}>
+                          {inv.outstanding > 0 ? formatINR(inv.outstanding, false) : 'Paid'}
+                        </td>
+                      </tr>
+                    ))}
+                    {!invoices.length && (
+                      <tr><td colSpan={5} className="py-6 text-center text-muted">No invoices yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between border-t border-line px-4 py-2 text-xs text-muted">
+                    <span>{invPage * PAGE_SIZE + 1}–{Math.min((invPage + 1) * PAGE_SIZE, invoices.length)} of {invoices.length}</span>
+                    <div className="flex gap-1">
+                      <button disabled={invPage === 0} onClick={() => setInvPage((p) => p - 1)}
+                        className="rounded px-2 py-1 hover:bg-canvas disabled:opacity-30">← Prev</button>
+                      <button disabled={invPage >= totalPages - 1} onClick={() => setInvPage((p) => p + 1)}
+                        className="rounded px-2 py-1 hover:bg-canvas disabled:opacity-30">Next →</button>
+                    </div>
+                  </div>
                 )}
-              </tbody>
-            </table>
-          ) : (
-            <table className="tbl">
-              <thead><tr><th>No.</th><th>Customer</th><th>Date</th><th className="r">Amount</th></tr></thead>
-              <tbody>
-                {creditNotes.map((cn) => (
-                  <tr key={cn.voucher_id}>
-                    <td className="num text-neg">{cn.voucher_no}</td>
-                    <td>{cn.party_name ?? '—'}</td>
-                    <td className="num">{formatDate(cn.date)}</td>
-                    <td className="r num bold text-neg">{formatINR(cn.amount, false)}</td>
-                  </tr>
-                ))}
-                {!creditNotes.length && (
-                  <tr><td colSpan={4} className="py-6 text-center text-muted">No credit notes yet.</td></tr>
+              </>
+            )
+          })() : (() => {
+            const totalPages = Math.ceil(creditNotes.length / PAGE_SIZE) || 1
+            const paged = creditNotes.slice(cnPage * PAGE_SIZE, (cnPage + 1) * PAGE_SIZE)
+            return (
+              <>
+                <table className="tbl">
+                  <thead><tr><th>No.</th><th>Customer</th><th>Date</th><th className="r">Amount</th></tr></thead>
+                  <tbody>
+                    {paged.map((cn) => (
+                      <tr key={cn.voucher_id}>
+                        <td className="num text-neg">{cn.voucher_no}</td>
+                        <td>{cn.party_name ?? '—'}</td>
+                        <td className="num">{formatDate(cn.date)}</td>
+                        <td className="r num bold text-neg">{formatINR(cn.amount, false)}</td>
+                      </tr>
+                    ))}
+                    {!creditNotes.length && (
+                      <tr><td colSpan={4} className="py-6 text-center text-muted">No credit notes yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between border-t border-line px-4 py-2 text-xs text-muted">
+                    <span>{cnPage * PAGE_SIZE + 1}–{Math.min((cnPage + 1) * PAGE_SIZE, creditNotes.length)} of {creditNotes.length}</span>
+                    <div className="flex gap-1">
+                      <button disabled={cnPage === 0} onClick={() => setCnPage((p) => p - 1)}
+                        className="rounded px-2 py-1 hover:bg-canvas disabled:opacity-30">← Prev</button>
+                      <button disabled={cnPage >= totalPages - 1} onClick={() => setCnPage((p) => p + 1)}
+                        className="rounded px-2 py-1 hover:bg-canvas disabled:opacity-30">Next →</button>
+                    </div>
+                  </div>
                 )}
-              </tbody>
-            </table>
-          )}
+              </>
+            )
+          })()}
         </div>
       </Card>
     </div>

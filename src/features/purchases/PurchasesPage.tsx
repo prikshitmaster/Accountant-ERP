@@ -8,7 +8,7 @@ import { rupeesToPaise, formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Field, Select, Input } from '@/components/ui/Input'
-import { ItemLines, emptyLine, type Line } from '@/components/ItemLines'
+import { ItemLines, emptyLine, lineError, type Line } from '@/components/ItemLines'
 import { PageHeader } from '@/components/ui/PageHeader'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -31,7 +31,10 @@ export function PurchasesPage() {
   const [msg, setMsg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const PAGE_SIZE = 10
   const [listTab, setListTab] = useState<'bills' | 'debit_notes'>('bills')
+  const [billPage, setBillPage] = useState(0)
+  const [dnPage,   setDnPage]   = useState(0)
   const { data: debitNotes = [] } = useDebitNotes(currentOrgId)
   const [dnDate, setDnDate] = useState(today())
   const [dnParty, setDnParty] = useState('')
@@ -48,6 +51,8 @@ export function PurchasesPage() {
       .filter((l) => l.stock_item_id && Number(l.qty) > 0)
       .map((l) => ({ stock_item_id: l.stock_item_id, qty: Number(l.qty), rate: rupeesToPaise(l.rate) }))
     if (!payload.length) { setError('Add at least one item.'); return }
+    const badLine = lines.find((l) => lineError(l))
+    if (badLine) { setError(lineError(badLine)!); return }
     setBusy(true); setError(null); setMsg(null)
     try {
       const res = await rpc.purchase(currentOrgId, date, mode === 'credit' ? party : null, payload, mode, narration)
@@ -115,7 +120,7 @@ export function PurchasesPage() {
               { id: 'bills' as const, label: 'Bills' },
               { id: 'debit_notes' as const, label: 'Debit Notes' },
             ]).map((t) => (
-              <button key={t.id} type="button" onClick={() => setListTab(t.id)}
+              <button key={t.id} type="button" onClick={() => { setListTab(t.id); setBillPage(0); setDnPage(0) }}
                 className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
                   listTab === t.id
                     ? 'border-brand-600 text-brand-600'
@@ -131,44 +136,78 @@ export function PurchasesPage() {
             ))}
           </div>
           <div className="overflow-x-auto">
-            {listTab === 'bills' ? (
-              <table className="tbl">
-                <thead><tr><th>No.</th><th>Supplier</th><th>Date</th><th className="r">Total</th><th className="r">Due</th></tr></thead>
-                <tbody>
-                  {bills.map((b) => (
-                    <tr key={b.id} className="cursor-pointer" onClick={() => navigate('/purchases/' + b.id)}>
-                      <td className="num">{b.bill_no}</td>
-                      <td>{partyName(b.party_id)}</td>
-                      <td className="num">{formatDate(b.date)}</td>
-                      <td className="r num bold">{formatINR(b.total, false)}</td>
-                      <td className={`r num ${b.outstanding > 0 ? 'text-warn' : 'text-pos'}`}>
-                        {b.outstanding > 0 ? formatINR(b.outstanding, false) : 'Paid'}
-                      </td>
-                    </tr>
-                  ))}
-                  {!bills.length && (
-                    <tr><td colSpan={5} className="py-6 text-center text-muted">No bills yet.</td></tr>
+            {listTab === 'bills' ? (() => {
+              const totalPages = Math.ceil(bills.length / PAGE_SIZE) || 1
+              const paged = bills.slice(billPage * PAGE_SIZE, (billPage + 1) * PAGE_SIZE)
+              return (
+                <>
+                  <table className="tbl">
+                    <thead><tr><th>No.</th><th>Supplier</th><th>Date</th><th className="r">Total</th><th className="r">Due</th></tr></thead>
+                    <tbody>
+                      {paged.map((b) => (
+                        <tr key={b.id} className="cursor-pointer" onClick={() => navigate('/purchases/' + b.id)}>
+                          <td className="num">{b.bill_no}</td>
+                          <td>{partyName(b.party_id)}</td>
+                          <td className="num">{formatDate(b.date)}</td>
+                          <td className="r num bold">{formatINR(b.total, false)}</td>
+                          <td className={`r num ${b.outstanding > 0 ? 'text-warn' : 'text-pos'}`}>
+                            {b.outstanding > 0 ? formatINR(b.outstanding, false) : 'Paid'}
+                          </td>
+                        </tr>
+                      ))}
+                      {!bills.length && (
+                        <tr><td colSpan={5} className="py-6 text-center text-muted">No bills yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-line px-4 py-2 text-xs text-muted">
+                      <span>{billPage * PAGE_SIZE + 1}–{Math.min((billPage + 1) * PAGE_SIZE, bills.length)} of {bills.length}</span>
+                      <div className="flex gap-1">
+                        <button disabled={billPage === 0} onClick={() => setBillPage((p) => p - 1)}
+                          className="rounded px-2 py-1 hover:bg-canvas disabled:opacity-30">← Prev</button>
+                        <button disabled={billPage >= totalPages - 1} onClick={() => setBillPage((p) => p + 1)}
+                          className="rounded px-2 py-1 hover:bg-canvas disabled:opacity-30">Next →</button>
+                      </div>
+                    </div>
                   )}
-                </tbody>
-              </table>
-            ) : (
-              <table className="tbl">
-                <thead><tr><th>No.</th><th>Supplier</th><th>Date</th><th className="r">Amount</th></tr></thead>
-                <tbody>
-                  {debitNotes.map((dn) => (
-                    <tr key={dn.voucher_id}>
-                      <td className="num text-pos">{dn.voucher_no}</td>
-                      <td>{dn.party_name ?? '—'}</td>
-                      <td className="num">{formatDate(dn.date)}</td>
-                      <td className="r num bold text-pos">{formatINR(dn.amount, false)}</td>
-                    </tr>
-                  ))}
-                  {!debitNotes.length && (
-                    <tr><td colSpan={4} className="py-6 text-center text-muted">No debit notes yet.</td></tr>
+                </>
+              )
+            })() : (() => {
+              const totalPages = Math.ceil(debitNotes.length / PAGE_SIZE) || 1
+              const paged = debitNotes.slice(dnPage * PAGE_SIZE, (dnPage + 1) * PAGE_SIZE)
+              return (
+                <>
+                  <table className="tbl">
+                    <thead><tr><th>No.</th><th>Supplier</th><th>Date</th><th className="r">Amount</th></tr></thead>
+                    <tbody>
+                      {paged.map((dn) => (
+                        <tr key={dn.voucher_id}>
+                          <td className="num text-pos">{dn.voucher_no}</td>
+                          <td>{dn.party_name ?? '—'}</td>
+                          <td className="num">{formatDate(dn.date)}</td>
+                          <td className="r num bold text-pos">{formatINR(dn.amount, false)}</td>
+                        </tr>
+                      ))}
+                      {!debitNotes.length && (
+                        <tr><td colSpan={4} className="py-6 text-center text-muted">No debit notes yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-line px-4 py-2 text-xs text-muted">
+                      <span>{dnPage * PAGE_SIZE + 1}–{Math.min((dnPage + 1) * PAGE_SIZE, debitNotes.length)} of {debitNotes.length}</span>
+                      <div className="flex gap-1">
+                        <button disabled={dnPage === 0} onClick={() => setDnPage((p) => p - 1)}
+                          className="rounded px-2 py-1 hover:bg-canvas disabled:opacity-30">← Prev</button>
+                        <button disabled={dnPage >= totalPages - 1} onClick={() => setDnPage((p) => p + 1)}
+                          className="rounded px-2 py-1 hover:bg-canvas disabled:opacity-30">Next →</button>
+                      </div>
+                    </div>
                   )}
-                </tbody>
-              </table>
-            )}
+                </>
+              )
+            })()}
           </div>
         </Card>
       </div>
