@@ -8,7 +8,7 @@
    Token NAMES are preserved app-wide; only values evolved.
    ============================================================ */
 @theme {
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   /* Surfaces & text (cool, calm neutrals) */
@@ -52,7 +52,7 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  letter-spacing: -0.011em;   /* subtle tightening for a refined feel */
+  letter-spacing: -0.012em;
 }
 input, select, button, textarea { font: inherit; }
 
@@ -63,21 +63,26 @@ input, select, button, textarea { font: inherit; }
   letter-spacing: -0.01em;
 }
 
-/* ---- Data tables: airy, legible, calm ---- */
+/* ---- Data tables: Zoho/Tally-style — dense, high-contrast, scannable ---- */
 .tbl { width: 100%; border-collapse: collapse; }
 .tbl th {
-  text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--color-muted);
-  padding: 12px 16px; border-bottom: 1px solid var(--color-line); white-space: nowrap;
+  text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: #334155;
+  padding: 10px 16px; border-bottom: 2px solid var(--color-line);
+  background: #f8f9fb; white-space: nowrap;
 }
 .tbl td {
-  padding: 13px 16px; border-bottom: 1px solid var(--color-line);
-  font-size: 14px; color: var(--color-ink);
+  padding: 11px 16px; border-bottom: 1px solid var(--color-line);
+  font-size: 13.5px; color: var(--color-ink);
 }
+/* zebra striping for easy row tracking */
+.tbl tbody tr:nth-child(even) td { background: #fafbfc; }
 .tbl tbody tr:last-child td { border-bottom: 0; }
-.tbl tbody tr { transition: background .12s ease; }
-.tbl tbody tr:hover { background: var(--color-paper); }
+.tbl tbody tr { transition: background .1s ease; }
+.tbl tbody tr:hover td { background: #eef1ff !important; }
 .tbl .r { text-align: right; }
+/* key balance/total columns — bold so numbers pop */
+.tbl .bold { font-weight: 700; color: var(--color-ink); }
 
 /* ---- Status badges (Paid / Due / Posted …) ---- */
 .badge {

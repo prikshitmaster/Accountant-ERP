@@ -149,8 +149,8 @@ export function ItemsPage() {
                     <td className="num text-muted">{it.hsn ?? '—'}</td>
                     <td className="r num text-muted">{it.gst_rate}%</td>
                     <td className={`r num ${low ? 'text-warn' : ''}`}>{it.qty_on_hand}{low ? ' ⚠' : ''}</td>
-                    <td className="r num">{formatINR(it.avg_cost, false)}</td>
-                    <td className="r num">{formatINR(it.value_on_hand, false)}</td>
+                    <td className="r num text-muted">{formatINR(it.avg_cost, false)}</td>
+                    <td className="r num bold">{formatINR(it.value_on_hand, false)}</td>
                   </tr>
                 )
               })}

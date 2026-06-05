@@ -6,6 +6,16 @@ import { formatINR, rupeesToPaise } from '@/lib/money'
 export type Line = { stock_item_id: string; qty: string; rate: string }
 export const emptyLine = (): Line => ({ stock_item_id: '', qty: '', rate: '' })
 
+export const MAX_LINE_QTY = 100_000          // per line
+export const MAX_LINE_RATE_RS = 999_999      // ₹9,99,999 per unit
+
+export function lineError(l: Line): string | null {
+  const q = Number(l.qty); const r = Number(l.rate)
+  if (l.qty && q > MAX_LINE_QTY) return `Qty max ${MAX_LINE_QTY.toLocaleString('en-IN')}`
+  if (l.rate && r > MAX_LINE_RATE_RS) return `Rate max ₹${MAX_LINE_RATE_RS.toLocaleString('en-IN')}`
+  return null
+}
+
 const basePaise = (l: Line) =>
   Math.round(Number(l.qty || 0) * rupeesToPaise(l.rate || '0'))
 
@@ -68,7 +78,7 @@ export function ItemTable({
                 <td className="text-muted text-sm">{it?.unit ?? '—'}</td>
                 <td className="r">
                   <input
-                    className="w-full bg-transparent text-right text-sm num outline-none"
+                    className={`w-full bg-transparent text-right text-sm num outline-none ${Number(l.qty) > MAX_LINE_QTY ? 'text-red-600' : ''}`}
                     inputMode="decimal"
                     value={l.qty}
                     placeholder="0"
@@ -77,14 +87,18 @@ export function ItemTable({
                 </td>
                 <td className="r">
                   <input
-                    className="w-full bg-transparent text-right text-sm num outline-none"
+                    className={`w-full bg-transparent text-right text-sm num outline-none ${Number(l.rate) > MAX_LINE_RATE_RS ? 'text-red-600' : ''}`}
                     inputMode="decimal"
                     value={l.rate}
                     placeholder="0.00"
                     onChange={(e) => set(i, { rate: e.target.value })}
                   />
                 </td>
-                <td className="r num text-sm">{amt > 0 ? formatINR(amt, false) : '—'}</td>
+                <td className="r num text-sm">
+                  {lineError(l)
+                    ? <span className="text-xs text-red-600">{lineError(l)}</span>
+                    : amt > 0 ? formatINR(amt, false) : '—'}
+                </td>
                 <td>
                   <button
                     type="button"

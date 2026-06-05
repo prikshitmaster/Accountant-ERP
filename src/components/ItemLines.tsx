@@ -6,6 +6,20 @@ import { formatINR, rupeesToPaise } from '@/lib/money'
 export type Line = { stock_item_id: string; qty: string; rate: string }
 export const emptyLine = (): Line => ({ stock_item_id: '', qty: '', rate: '' })
 
+export const MAX_LINE_QTY = 100_000
+export const MAX_LINE_RATE_RS = 999_999
+
+export function lineError(l: Line): string | null {
+  const q = Number(l.qty); const r = Number(l.rate)
+  if (l.qty && q > MAX_LINE_QTY) return `Qty max ${MAX_LINE_QTY.toLocaleString('en-IN')}`
+  if (l.rate && r > MAX_LINE_RATE_RS) return `Rate max ₹${MAX_LINE_RATE_RS.toLocaleString('en-IN')}`
+  return null
+}
+
+export function hasLineErrors(lines: Line[]): boolean {
+  return lines.some((l) => lineError(l) !== null)
+}
+
 /** Editor for sale/purchase lines. Computes base + GST preview. */
 export function ItemLines({
   items, value, onChange, rateLabel, priceField,
@@ -64,14 +78,26 @@ export function ItemLines({
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <label className="text-xs text-muted">
                   Qty {it ? `(${it.unit})` : ''}
-                  <Input className="h-10" inputMode="decimal" value={l.qty} onChange={(e) => set(i, { qty: e.target.value })} placeholder="0" />
+                  <Input
+                    className={`h-10 ${Number(l.qty) > MAX_LINE_QTY ? 'border-red-400 text-red-600' : ''}`}
+                    inputMode="decimal" value={l.qty}
+                    onChange={(e) => set(i, { qty: e.target.value })} placeholder="0" />
+                  {Number(l.qty) > MAX_LINE_QTY && (
+                    <span className="text-red-600 text-[10px]">Max {MAX_LINE_QTY.toLocaleString('en-IN')}</span>
+                  )}
                 </label>
                 <label className="text-xs text-muted">
                   {rateLabel} (₹)
-                  <Input className="h-10" inputMode="decimal" value={l.rate} onChange={(e) => set(i, { rate: e.target.value })} placeholder="0" />
+                  <Input
+                    className={`h-10 ${Number(l.rate) > MAX_LINE_RATE_RS ? 'border-red-400 text-red-600' : ''}`}
+                    inputMode="decimal" value={l.rate}
+                    onChange={(e) => set(i, { rate: e.target.value })} placeholder="0" />
+                  {Number(l.rate) > MAX_LINE_RATE_RS && (
+                    <span className="text-red-600 text-[10px]">Max ₹{MAX_LINE_RATE_RS.toLocaleString('en-IN')}</span>
+                  )}
                 </label>
               </div>
-              {it && (Number(l.qty) > 0) && (
+              {it && (Number(l.qty) > 0) && !lineError(l) && (
                 <p className="mt-1.5 text-xs text-muted">
                   Base <span className="num">{formatINR(basePaise(l))}</span>
                   {Number(it.gst_rate) > 0 && <> · GST {it.gst_rate}% <span className="num">{formatINR(gstPaise(l))}</span></>}

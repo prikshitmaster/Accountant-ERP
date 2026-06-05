@@ -14,7 +14,7 @@ export function InvoicePrint({ inv }: { inv: InvoiceDetail }) {
   const hasStateInfo = !!inv.org_state_code && !!inv.party_state_code
 
   return (
-    <div className="hidden print:block p-8 text-sm text-black font-sans">
+    <div className="p-8 text-sm text-black font-sans">
       {/* Header */}
       <div className="text-center mb-6">
         <h1 className="text-xl font-bold tracking-wide uppercase">Tax Invoice</h1>

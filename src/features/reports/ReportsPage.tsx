@@ -206,9 +206,9 @@ function PartyLedger({ orgId, initialParty, onParty }: {
                   <tr key={r.voucher_id + i}>
                     <td className="num">{formatDate(r.date)}</td>
                     <td className="num">{r.voucher_no}</td>
-                    <td className="r num">{r.debit ? formatINR(r.debit, false) : '—'}</td>
-                    <td className="r num">{r.credit ? formatINR(r.credit, false) : '—'}</td>
-                    <td className="r num">{formatINR(Math.abs(r.running_balance), false)} {r.running_balance >= 0 ? 'Dr' : 'Cr'}</td>
+                    <td className={`r num ${r.debit ? 'text-pos' : 'text-muted'}`}>{r.debit ? formatINR(r.debit, false) : '—'}</td>
+                    <td className={`r num ${r.credit ? 'text-neg' : 'text-muted'}`}>{r.credit ? formatINR(r.credit, false) : '—'}</td>
+                    <td className="r num bold">{formatINR(Math.abs(r.running_balance), false)} {r.running_balance >= 0 ? 'Dr' : 'Cr'}</td>
                   </tr>
                 ))}
                 {!rows.length && <tr><td colSpan={5} className="py-6 text-center text-muted">No transactions.</td></tr>}

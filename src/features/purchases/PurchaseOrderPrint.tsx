@@ -5,7 +5,7 @@ export function PurchaseOrderPrint({ po }: { po: PurchaseOrderDetail }) {
   const total = po.lines.reduce((s, l) => s + l.amount, 0)
 
   return (
-    <div className="hidden print:block p-8 text-sm text-black font-sans">
+    <div className="p-8 text-sm text-black font-sans">
       <div className="text-center mb-6">
         <h1 className="text-xl font-bold tracking-wide uppercase">Purchase Order</h1>
       </div>

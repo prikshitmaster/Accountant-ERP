@@ -265,6 +265,51 @@ export function usePaymentsMade(orgId: string | null) {
   })
 }
 
+export type PaymentDetailLine = {
+  account_name: string; system_key: string | null; debit: number; credit: number
+}
+export type PaymentDetail = {
+  voucher_id: string; voucher_no: string; date: string; narration: string | null
+  party_name: string | null; mode: string; amount: number
+  lines: PaymentDetailLine[]
+}
+export function usePaymentDetail(orgId: string | null, voucherId: string | null) {
+  return useQuery({
+    queryKey: ['payment_detail', orgId, voucherId],
+    enabled: !!orgId && !!voucherId,
+    queryFn: async (): Promise<PaymentDetail | null> => {
+      // Get voucher + mode from our views
+      const { data: hdr, error: e1 } = await supabase
+        .from('v_payments_received')
+        .select('voucher_id, voucher_no, date, narration, party_name, mode, amount')
+        .eq('org_id', orgId).eq('voucher_id', voucherId).maybeSingle()
+      const { data: hdr2, error: e2 } = hdr ? { data: null, error: null } : await supabase
+        .from('v_payments_made')
+        .select('voucher_id, voucher_no, date, narration, party_name, mode, amount')
+        .eq('org_id', orgId).eq('voucher_id', voucherId).maybeSingle()
+      if (e1 && e2) throw e1 ?? e2
+      const h = (hdr ?? hdr2) as PaymentRow | null
+      if (!h) return null
+      // Get journal lines
+      const { data: lines, error: e3 } = await supabase
+        .from('ledger_entries')
+        .select('debit, credit, account:accounts(name, system_key)')
+        .eq('voucher_id', voucherId)
+        .order('debit', { ascending: false })
+      if (e3) throw e3
+      return {
+        ...h,
+        lines: (lines ?? []).map((l: any) => ({
+          account_name: l.account?.name ?? '—',
+          system_key: l.account?.system_key ?? null,
+          debit: Number(l.debit),
+          credit: Number(l.credit),
+        })),
+      }
+    },
+  })
+}
+
 export type AgedRow = {
   party_name: string; invoice_no?: string; bill_no?: string; date: string
   outstanding: number; age_days: number

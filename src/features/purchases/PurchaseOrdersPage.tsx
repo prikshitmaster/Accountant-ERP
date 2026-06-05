@@ -9,7 +9,7 @@ import { rupeesToPaise, formatINR, formatDate } from '@/lib/money'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Field, Select, Input } from '@/components/ui/Input'
-import { ItemLines, emptyLine, type Line } from '@/components/ItemLines'
+import { ItemLines, emptyLine, lineError, type Line } from '@/components/ItemLines'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -48,6 +48,8 @@ export function PurchaseOrdersPage() {
       .map((l) => ({ stock_item_id: l.stock_item_id, qty: Number(l.qty), rate: rupeesToPaise(l.rate) }))
     if (!payload.length) { setError('Add at least one item.'); return }
     if (!party) { setError('Select a supplier.'); return }
+    const badLine = lines.find((l) => lineError(l))
+    if (badLine) { setError(lineError(badLine)!); return }
     setBusy(true); setError(null); setMsg(null)
     try {
       const res = await rpc.createPurchaseOrder(
