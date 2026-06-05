@@ -52,15 +52,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
-      setLoading(false)
+      // If no session, stop loading now. If session exists, wait for
+      // memberships to load (handled in the [session] effect below).
+      if (!data.session) setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => sub.subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
-    if (session) refreshMemberships()
-    else setMemberships([])
+    if (session) {
+      refreshMemberships().finally(() => setLoading(false))
+    } else {
+      setMemberships([])
+      setLoading(false)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session])
 
